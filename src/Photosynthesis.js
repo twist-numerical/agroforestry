@@ -1,9 +1,11 @@
 import { Color, MeshBasicMaterial, WebGLRenderTarget } from "three";
 import * as THREE from "three";
 
+const black = new Color("black");
+
 const blackMaterial = new MeshBasicMaterial({
   side: THREE.DoubleSide,
-  color: "black",
+  color: black,
 });
 
 export default class Photosynthesis {
@@ -44,9 +46,8 @@ export default class Photosynthesis {
       }
     });
 
-    this.renderer.setRenderTarget(null);
-    this.renderer.render(scene, camera);
-
+    const background = scene.background;
+    scene.background = black;
     this.renderer.setRenderTarget(this.renderTarget);
     this.renderer.render(scene, camera);
     this.renderer.readRenderTargetPixels(
@@ -57,6 +58,7 @@ export default class Photosynthesis {
       this.size,
       this.buffer
     );
+    scene.background = background;
     this.renderer.setRenderTarget(null);
 
     scene.traverseVisible((obj) => {
