@@ -16,7 +16,7 @@ import Plant from "./Plant.js";
 import Photosynthesis from "./Photosynthesis.js";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
-import LidarTreeGeometry from "./LidarTreeGeometry.js";
+import loadLidarTreeGeometry from "./loadLidarTreeGeometry.js";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -50,23 +50,24 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const light = new THREE.AmbientLight(0x404040); // soft white light
 scene.add(light);
 
-const lidarTreeGeometry = new LidarTreeGeometry(7);
-const trees = new Group();
-for (let i = -5; i <= 5; ++i) {
-  const lidarTree = new Mesh(
-    lidarTreeGeometry,
-    new MeshPhongMaterial({
-      color: "blue",
-    })
-  );
-  lidarTree.position.set(i * 0.8, 0, 4);
-  lidarTree.scale.multiplyScalar(0.3);
-  lidarTree.rotateY(Math.random() * Math.PI * 2);
-  lidarTree.rotateX(-Math.PI / 2);
-  console.log((window.lidarTree = lidarTree));
-  trees.add(lidarTree);
-}
-scene.add(trees);
+(async () => {
+  const lidarTreeGeometry = new (await loadLidarTreeGeometry())(7);
+  const trees = new Group();
+  for (let i = -5; i <= 5; ++i) {
+    const lidarTree = new Mesh(
+      lidarTreeGeometry,
+      new MeshPhongMaterial({
+        color: "blue",
+      })
+    );
+    lidarTree.position.set(i * 0.8, 0, 4);
+    lidarTree.scale.multiplyScalar(0.3);
+    lidarTree.rotateY(Math.random() * Math.PI * 2);
+    lidarTree.rotateX(-Math.PI / 2);
+    trees.add(lidarTree);
+  }
+  scene.add(trees);
+})();
 
 const ground = new Mesh(
   new PlaneGeometry(10, 10),

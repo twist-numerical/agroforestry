@@ -8,12 +8,48 @@
             margin: 0;
             padding: 0;
         }
+
+        #info-box {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 400px;
+            background: white;
+            padding: 12px;
+        }
+
+        img {
+            display: block;
+            margin: 5px auto;
+        }
+
+        p {
+            margin: 0 0 8px;
+            padding: 0;
+        }
     </style>
 </head>
 
 <body>
 
     <script src="index.js"></script>
+    <div id="info-box">
+        <p>
+            A simple model for tree growth:
+        </p>
+        <img src="ode.png" width="200px" />
+        <ul>
+            <li>h: the height of the tree</li>
+            <li>b: the grow speed</li>
+            <li>l: the calculated amount of received light</li>
+            <li>a: a measure for the required amount of light to grow</li>
+        </ul>
+        <p>
+            In this small demo 25 plants are growing next to a tree line. To the left, the view of the sun can be seen.
+            This is used in calculating how much light each of the leaves receives.
+        </p>
+
+    </div>
 </body>
 
 </html>
