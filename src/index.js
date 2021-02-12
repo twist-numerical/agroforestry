@@ -39,6 +39,7 @@ for (let x = -2; x <= 2; ++x)
     plant.position.set(x, 0, y);
     plant.setSize(0.8 + 0.2 * Math.random());
   }
+window.plants = plants;
 
 const camera = new PerspectiveCamera(
   45,
@@ -89,7 +90,7 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 controls.update();
 
-const sun = new Sunlight(5, 512);
+const sun = new Sunlight(5, 1024);
 sun.position.set(0, 6, 0);
 const sunIndicator = new Mesh(
   new SphereGeometry(1, 21, 11),
