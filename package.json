@@ -17,5 +17,8 @@
   },
   "browserslist": [
     "last 1 Chrome version"
-  ]
+  ],
+  "devDependencies": {
+    "typescript": "^4.1.5"
+  }
 }

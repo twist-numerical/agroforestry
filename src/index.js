@@ -7,16 +7,18 @@ import {
   MeshBasicMaterial,
   MeshPhongMaterial,
   OrthographicCamera,
+  PerspectiveCamera,
   PlaneGeometry,
   Scene,
   SphereGeometry,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Plant from "./Plant.js";
-import Photosynthesis from "./Photosynthesis.js";
+import Photosynthesis from "./photosynthesis/Photosynthesis";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
 import loadLidarTreeGeometry from "./loadLidarTreeGeometry.js";
+import Sunlight from "./photosynthesis/Sunlight.ts";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -38,7 +40,7 @@ for (let x = -2; x <= 2; ++x)
     plant.setSize(0.8 + 0.2 * Math.random());
   }
 
-const camera = new THREE.PerspectiveCamera(
+const camera = new PerspectiveCamera(
   45,
   window.innerWidth / window.innerHeight,
   1,
@@ -76,8 +78,9 @@ const ground = new Mesh(
     side: THREE.DoubleSide,
   })
 );
+ground.position.set(0, -0.01, 0);
 ground.rotateX(Math.PI / 2);
-scene.add(ground);
+//scene.add(ground);
 scene.background = new Color(0.9, 0.9, 0.9);
 
 //controls.update() must be called after any manual changes to the camera's transform
@@ -86,16 +89,13 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 controls.update();
 
-const sun = new THREE.DirectionalLight(0xaaaaaa);
-const sunCamera = new OrthographicCamera(-5, 5, -5, 5, -100, 100);
-sunCamera.lookAt(0, -1, 0);
+const sun = new Sunlight(5, 512);
 sun.position.set(0, 6, 0);
 const sunIndicator = new Mesh(
   new SphereGeometry(1, 21, 11),
   new MeshBasicMaterial({ color: "yellow" })
 );
 sun.add(sunIndicator);
-sun.add(sunCamera);
 
 const sunAngle = new Group();
 const sunRotation = new Group();
@@ -121,13 +121,14 @@ const photosynthesis = new Photosynthesis(renderer, 1024);
 const drawViewOfSun = (() => {
   const scene = new Scene();
   const planeMaterial = new MeshBasicMaterial();
-  planeMaterial.map = photosynthesis.renderTarget.texture;
+  planeMaterial.map = sun.target.texture;
   const plane = new Mesh(new PlaneGeometry(2, 2), planeMaterial);
   plane.scale.set(-1, 1, 1);
   scene.add(plane);
   const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
   camera.lookAt(0, 0, 1);
   return () => {
+    planeMaterial.map = photosynthesis.summarizer.targets[0].texture;
     renderer.render(scene, camera);
   };
 })();
@@ -172,10 +173,15 @@ function animate() {
   renderer.render(scene, camera);
   sunIndicator.visible = false;
 
+  const photo = photosynthesis.calculate(scene, [sun]);
+  window.photo = photo;
+
   renderer.setScissorTest(true);
-  renderer.setScissor(0, 0, 300, 300);
-  renderer.setViewport(0, 0, 300, 300);
-  const photo = photosynthesis.calculate(scene, sunCamera);
+  {
+    const size = 500;
+    renderer.setScissor(0, 0, size, size);
+    renderer.setViewport(0, 0, size, size);
+  }
   drawViewOfSun();
 
   if (timeDiff < 12)
@@ -196,3 +202,10 @@ function animate() {
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
