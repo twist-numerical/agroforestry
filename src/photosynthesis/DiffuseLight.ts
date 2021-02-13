@@ -18,6 +18,7 @@ export default class DiffuseLight extends UVLight {
   camera: OrthographicCamera;
   target: WebGLRenderTarget;
   transforms: Matrix4[] = [];
+  pixelArea: number;
 
   constructor(
     count: number,
@@ -29,13 +30,14 @@ export default class DiffuseLight extends UVLight {
     this.add(this.light);
 
     this.camera = new OrthographicCamera(
-      -viewSize,
-      viewSize,
-      -viewSize,
-      viewSize,
+      -viewSize / 2,
+      viewSize / 2,
+      -viewSize / 2,
+      viewSize / 2,
       -clipping,
       clipping
     );
+    this.pixelArea = Math.pow(viewSize / renderSize, 2);
     this.camera.matrixAutoUpdate = false;
     this.add(this.camera);
 
@@ -59,13 +61,6 @@ export default class DiffuseLight extends UVLight {
     this.target = new WebGLRenderTarget(renderSize, renderSize);
   }
 
-  getMaterial(photosynthesisID: number, color: Color): Material {
-    return new MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      color: color,
-    });
-  }
-
   render(
     renderer: WebGLRenderer,
     scene: Scene,
@@ -79,7 +74,8 @@ export default class DiffuseLight extends UVLight {
       photosynthesis.addLight(
         this.target.texture,
         this.target.width,
-        this.target.height
+        this.target.height,
+        this.pixelArea
       );
     });
   }

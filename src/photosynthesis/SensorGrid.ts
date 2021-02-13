@@ -2,6 +2,7 @@ import {
   Color,
   DoubleSide,
   Mesh,
+  MeshBasicMaterial,
   MeshPhongMaterial,
   Object3D,
   PlaneGeometry,
@@ -32,6 +33,11 @@ export default class SensorGrid extends Object3D {
             color: new Color().setHSL(Math.random(), 0.9, 0.6),
             side: DoubleSide,
           })
+        );
+        (sensor.material as any).photosynthesisMaterial = new MeshBasicMaterial(
+          {
+            side: DoubleSide,
+          }
         );
         sensor.rotateX(Math.PI / 2);
         (sensor as any).photosynthesisID = ++photosynthesisID;

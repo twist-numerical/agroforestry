@@ -2,9 +2,11 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DoubleSide,
   InstancedMesh,
   Material,
   Mesh,
+  MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
   RawShaderMaterial,
@@ -20,8 +22,8 @@ import UVLight from "./UVLight";
 
 const black = new Color("black");
 const blockTimesteps = 64;
-const blockWidth = 256;
-const blockHeight = 256;
+const blockWidth = 512;
+const blockHeight = 512;
 
 const summaryMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
@@ -68,7 +70,7 @@ void main()	{
       vec2 p = vec2(x/${blockWidth.toFixed(1)}, y);
       total += texture2D(data, p).r;
     }
-    gl_FragColor.r = total/1000.;
+    gl_FragColor.r = total;
   }
 }
 `,
@@ -83,6 +85,7 @@ const combineMaterial = new RawShaderMaterial({
     size: { value: [0, 0] },
     fromZero: { value: true },
     canvasSize: { value: [0, 0] },
+    pixelArea: { value: 1 },
   },
   vertexShader: `
 precision highp float;
@@ -110,22 +113,26 @@ uniform vec2 canvasSize;
 uniform vec2 offset;
 uniform vec2 size;
 uniform bool fromZero;
+uniform float pixelArea;
 
 varying vec2 vPosition;
 varying float vID;
 
 void main()	{
-  float total = fromZero ? 0.0 : texture2D(totals, vPosition.xy/canvasSize).r;
   float x = vPosition.x;
+  float total = 0.0;
   for(float y = 0.5; y < ${blockHeight.toFixed(1)}; ++y) {
     vec2 p = (offset + vec2(x, y))/size;
     if(p.x <= 1.0 && p.y <= 1.0) {
       vec4 pixel = texture2D(data, p);
       float pID = pixel.r * 63.0 + floor(0.5 + pixel.g * 63.0) * 64.0;
       if(abs(vID - pID) < 0.5)
-        total += pixel.b;
+        total +=  pixel.b;
     }
   }
+  total *= pixelArea;
+  if(!fromZero)
+    total += texture2D(totals, vPosition.xy/canvasSize).r;
   gl_FragColor.r = total;
 }
 `,
@@ -138,7 +145,6 @@ function newDataRenderTarget(width: number, height: number) {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
   });
-  // target.texture.internalFormat = "RG32F";
   return target;
 }
 
@@ -155,6 +161,7 @@ export default class Photosynthesis {
   private summaryBuffer: Float32Array;
   private internalTimesteps: [number, number[]][] = [];
   private timesteps: [number, Map<number, number>][] = [];
+  __colors = new Map<number, Color>();
 
   constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
@@ -164,6 +171,49 @@ export default class Photosynthesis {
     this.plane.frustumCulled = false;
     this.scene.add(this.plane);
     this.scene.add(this.camera);
+  }
+
+  private getColor(photosynthesisID?: number) {
+    if (!photosynthesisID) return black;
+    let color = this.__colors.get(photosynthesisID);
+    if (color === undefined) {
+      color = new Color(
+        (photosynthesisID & 63) / 63,
+        (photosynthesisID >> 6) / 63,
+        1
+      );
+      this.__colors.set(photosynthesisID, color);
+    }
+    return color;
+  }
+
+  private getPhotosynthesisMaterial(
+    material: Material | MeshBasicMaterial,
+    photosynthesisID?: number
+  ): Material {
+    const color = this.getColor(photosynthesisID);
+    let photosynthesisMaterial = (material as any).photosynthesisMaterial;
+    if (!photosynthesisMaterial) {
+      photosynthesisMaterial = material.clone();
+      if (!(photosynthesisMaterial instanceof MeshBasicMaterial)) {
+        console.warn(
+          "Material is not a MeshBasicMaterial. Provide your own photosynthesisMaterial."
+        );
+      }
+      if ("map" in material) {
+        console.warn(
+          "Material does contain a map. This will be ignored. If it contains an alpha channel, use alphaMap."
+        );
+        material.map = null;
+      }
+      if ("aoMap" in material) material.aoMap = null;
+      if ("envMap" in material) material.envMap = null;
+
+      photosynthesisMaterial.side = DoubleSide;
+      (material as any).photosynthesisMaterial = photosynthesisMaterial;
+    }
+    photosynthesisMaterial.color = color;
+    return photosynthesisMaterial;
   }
 
   private setIDs(ids: number[]) {
@@ -221,12 +271,18 @@ export default class Photosynthesis {
     });
   }
 
-  addLight(texture: Texture, width: Number, height: Number) {
+  addLight(
+    texture: Texture,
+    width: number,
+    height: number,
+    pixelArea: number = 1
+  ) {
     this.plane.material = combineMaterial;
     const uniforms = combineMaterial.uniforms;
     uniforms.data.value = texture;
     uniforms.canvasSize.value = [blockWidth, this.photosynthesisIDs.length];
     uniforms.size.value = [width, height];
+    uniforms.pixelArea.value = pixelArea;
 
     for (let x = 0; x < width; x += blockWidth)
       for (let y = 0; y < height; y += blockHeight) {
@@ -279,7 +335,7 @@ export default class Photosynthesis {
         const data = new Map<number, number>();
         ids.forEach((id, j) => {
           const index = blockTimesteps * j + i;
-          data.set(id, 1000 * this.summaryBuffer[index]);
+          data.set(id, this.summaryBuffer[index]);
         });
         return [time, data];
       })
@@ -298,6 +354,10 @@ export default class Photosynthesis {
     scene.traverseVisible((obj) => {
       if (obj instanceof Mesh && obj.material) {
         (obj as any).photosynthesisOldMaterial = obj.material;
+        obj.material = this.getPhotosynthesisMaterial(
+          obj.material as Material,
+          (obj as any).photosynthesisID
+        );
         updateMaterial.push(obj);
         if ((obj as any).photosynthesisID !== undefined)
           ids.add((obj as any).photosynthesisID);
@@ -309,18 +369,6 @@ export default class Photosynthesis {
     scene.background = black;
 
     lights.forEach((light) => {
-      updateMaterial.forEach((obj) => {
-        const material = obj.photosynthesisID
-          ? light.getCachedMaterial(obj.photosynthesisID)
-          : light.blackMaterial;
-
-        if (obj instanceof InstancedMesh) {
-          obj.material = material.clone();
-        } else {
-          obj.material = material;
-        }
-      });
-
       light.render(this.renderer, scene, this);
     });
 

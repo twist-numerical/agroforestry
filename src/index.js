@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import {
-  BoxGeometry,
   Clock,
   Color,
   Group,
@@ -11,13 +10,11 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
-  Sphere,
   InstancedMesh,
   SphereGeometry,
   Matrix4,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import Plant from "./Plant.js";
 import Photosynthesis from "./photosynthesis/Photosynthesis";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
@@ -36,7 +33,9 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const sensorGrid = new SensorGrid(16,16, 5, 5);
+const viewSize = 30;
+const renderSize = 1024;
+const sensorGrid = new SensorGrid(20, 5, 20, 5);
 scene.add(sensorGrid);
 
 const camera = new PerspectiveCamera(
@@ -51,39 +50,21 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const light = new THREE.AmbientLight(0x404040); // soft white light
 scene.add(light);
 
-(async () => {
-  const lidarTreeGeometry = new (await loadLidarTreeGeometry())(7);
-  const trees = new Group();
-  for (let i = -5; i <= 5; ++i) {
-    const lidarTree = new Mesh(
-      lidarTreeGeometry,
-      new MeshPhongMaterial({
-        color: "blue",
-      })
-    );
-    lidarTree.position.set(i * 0.8, 0, 4);
-    lidarTree.scale.multiplyScalar(0.3);
-    lidarTree.rotateY(Math.random() * Math.PI * 2);
-    lidarTree.rotateX(-Math.PI / 2);
-    trees.add(lidarTree);
-  }
-  scene.add(trees);
-
-  sunIndicator.visible = false;
-  diffuseIndicator.visible = false;
-  photosynthesis.calculate(+new Date(), scene, [diffuseLight]);
-  const diffuseRapport = photosynthesis.getTimesteps()[0][1];
-  console.log(diffuseRapport);
-  photosynthesis.clearTimesteps();
-  requestAnimationFrame(animate);
-})();
+function addPhotosynthesisMaterial(material) {
+  material.photosynthesisMaterial = new MeshBasicMaterial({
+    side: THREE.DoubleSide,
+  });
+  return material;
+}
 
 const ground = new Mesh(
-  new PlaneGeometry(10, 10),
-  new MeshPhongMaterial({
-    color: "#8a763a",
-    side: THREE.DoubleSide,
-  })
+  new PlaneGeometry(viewSize, viewSize),
+  addPhotosynthesisMaterial(
+    new MeshPhongMaterial({
+      color: "#8a763a",
+      side: THREE.DoubleSide,
+    })
+  )
 );
 ground.position.set(0, -0.01, 0);
 ground.rotateX(Math.PI / 2);
@@ -96,13 +77,14 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 controls.update();
 
-const diffuseLight = new DiffuseLight(31, 5, 1024);
-const diffuseSphere = new SphereGeometry(1, 21, 11);
-diffuseSphere.applyMatrix4(new Matrix4().makeTranslation(0, 0, 5));
+const diffuseLight = new DiffuseLight(51, viewSize, 512);
+const diffuseSphere = new PlaneGeometry(2, 2);
+diffuseSphere.applyMatrix4(new Matrix4().makeTranslation(0, 0, viewSize / 2));
 const diffuseIndicator = new InstancedMesh(
   diffuseSphere,
   new MeshBasicMaterial({
     color: "green",
+    side: THREE.DoubleSide,
   }),
   diffuseLight.transforms.length
 );
@@ -113,8 +95,8 @@ diffuseLight.transforms.forEach((matrix, i) => {
 diffuseIndicator.needsUpdate = true;
 scene.add(diffuseLight);
 
-const sun = new Sunlight(5, 1024);
-sun.position.set(0, 6, 0);
+const sun = new Sunlight(viewSize, renderSize);
+sun.position.set(0, 20, 0);
 const sunIndicator = new Mesh(
   new SphereGeometry(1, 21, 11),
   new MeshBasicMaterial({ color: "yellow" })
@@ -162,10 +144,18 @@ const drawViewOfSun = (() => {
 const settings = {
   speed: 3,
   latitude: 10,
+  display: {
+    diffuseLight: true,
+  },
 };
-const gui = new dat.GUI();
-gui.add(settings, "speed", 0, 10, 0.1).name("Speed (h/s)");
-gui.add(settings, "latitude", 0, 90, 0.1).name("Latitude (°)");
+{
+  const gui = new dat.GUI();
+  gui.add(settings, "speed", 0, 10, 0.1).name("Speed (h/s)");
+  gui.add(settings, "latitude", 0, 90, 0.1).name("Latitude (°)");
+  const display = gui.addFolder("display");
+  display.add(settings.display, "diffuseLight").name("Diffuse light");
+  display.open();
+}
 
 const clock = new Clock();
 let secondsCounter = 0;
@@ -178,11 +168,10 @@ function animate() {
   sunAngle.rotation.set(0, 0, (Math.PI / 180) * settings.latitude);
   secondsCounter += settings.speed * clock.getDelta();
   const hours = convertToHours(secondsCounter);
-  const timeDiff = hours - lastTime;
   lastTime = hours;
   setTime(hours);
   sunIndicator.visible = true;
-  diffuseIndicator.visible = true;
+  diffuseIndicator.visible = settings.display.diffuseLight;
   renderer.setScissorTest(false);
   renderer.setViewport(
     0,
@@ -214,3 +203,32 @@ window.addEventListener("resize", () => {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+(async () => {
+  const lidarTreeGeometry = new (await loadLidarTreeGeometry())(5);
+  const trees = new Group();
+
+  for (let i = 0; i <= 0; ++i) {
+    const lidarTree = new Mesh(
+      lidarTreeGeometry,
+      addPhotosynthesisMaterial(
+        new MeshPhongMaterial({
+          color: "blue",
+        })
+      )
+    );
+    lidarTree.position.set(i * 2, 0, 4);
+    lidarTree.rotateY(Math.random() * Math.PI * 2);
+    lidarTree.rotateX(-Math.PI / 2);
+    trees.add(lidarTree);
+  }
+  scene.add(trees);
+
+  sunIndicator.visible = false;
+  diffuseIndicator.visible = false;
+  photosynthesis.calculate(+new Date(), scene, [diffuseLight]);
+  const diffuseRapport = photosynthesis.getTimesteps()[0][1];
+  console.log(diffuseRapport);
+  photosynthesis.clearTimesteps();
+  requestAnimationFrame(animate);
+})();

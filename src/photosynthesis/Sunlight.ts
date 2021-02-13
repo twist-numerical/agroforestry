@@ -15,16 +15,18 @@ export default class Sunlight extends UVLight {
   light = new THREE.DirectionalLight(0xaaaaaa);
   camera: OrthographicCamera;
   target: WebGLRenderTarget;
+  pixelArea: number;
 
   constructor(viewSize: number, renderSize: number, clipping = 2 * viewSize) {
     super();
     this.add(this.light);
 
+    this.pixelArea = Math.pow(viewSize / renderSize, 2);
     this.camera = new OrthographicCamera(
-      -viewSize,
-      viewSize,
-      -viewSize,
-      viewSize,
+      -viewSize / 2,
+      viewSize / 2,
+      -viewSize / 2,
+      viewSize / 2,
       -clipping,
       clipping
     );
@@ -51,7 +53,8 @@ export default class Sunlight extends UVLight {
     photosynthesis.addLight(
       this.target.texture,
       this.target.width,
-      this.target.height
+      this.target.height,
+      this.pixelArea
     );
   }
 }
