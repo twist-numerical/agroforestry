@@ -49,12 +49,13 @@ export default class Photosynthesis {
     });
 
     scene.background = background;
-    this.renderer.setRenderTarget(null);
 
     updateMaterial.forEach((obj) => {
       obj.material = obj.photosynthesisOldMaterial;
     });
 
-    return this.summarizer.summary();
+    this.summarizer.endTimestep();
+    this.renderer.setRenderTarget(null);
+    return this.summarizer;
   }
 }

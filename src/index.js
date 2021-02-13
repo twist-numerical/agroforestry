@@ -129,7 +129,7 @@ const drawViewOfSun = (() => {
   const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
   camera.lookAt(0, 0, 1);
   return () => {
-    planeMaterial.map = photosynthesis.summarizer.targets[0].texture;
+    planeMaterial.map = photosynthesis.summarizer.summaryTargets[0].texture;
     renderer.render(scene, camera);
   };
 })();
@@ -185,20 +185,6 @@ function animate() {
   }
   drawViewOfSun();
 
-  if (timeDiff < 12)
-    // skip night
-    plants.forEach((plant) => {
-      const g = plant.size;
-      const light = photo.get(plant.photosynthesisID) || 0;
-      plant.setSize(
-        Math.max(
-          0.2,
-          g +
-            ((timeDiff * settings.growSpeed) / 1000) *
-              (light - settings.lightRequired * g * g * g)
-        )
-      );
-    });
   stats.end();
   requestAnimationFrame(animate);
 }
