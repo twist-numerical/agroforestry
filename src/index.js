@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {
+  BoxGeometry,
   Clock,
   Color,
   Group,
@@ -10,7 +11,10 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
+  Sphere,
+  InstancedMesh,
   SphereGeometry,
+  Matrix4,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Plant from "./Plant.js";
@@ -19,6 +23,8 @@ import Stats from "stats.js";
 import * as dat from "dat.gui";
 import loadLidarTreeGeometry from "./loadLidarTreeGeometry.js";
 import Sunlight from "./photosynthesis/Sunlight.ts";
+import DiffuseLight from "./photosynthesis/DiffuseLight.ts";
+import SensorGrid from "./photosynthesis/SensorGrid.ts";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -30,16 +36,8 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 
-const plants = [];
-for (let x = -2; x <= 2; ++x)
-  for (let y = -2; y <= 2; ++y) {
-    const plant = new Plant();
-    plants.push(plant);
-    scene.add(plant);
-    plant.position.set(x, 0, y);
-    plant.setSize(0.8 + 0.2 * Math.random());
-  }
-window.plants = plants;
+const sensorGrid = new SensorGrid(16,16, 5, 5);
+scene.add(sensorGrid);
 
 const camera = new PerspectiveCamera(
   45,
@@ -70,6 +68,14 @@ scene.add(light);
     trees.add(lidarTree);
   }
   scene.add(trees);
+
+  sunIndicator.visible = false;
+  diffuseIndicator.visible = false;
+  photosynthesis.calculate(+new Date(), scene, [diffuseLight]);
+  const diffuseRapport = photosynthesis.getTimesteps()[0][1];
+  console.log(diffuseRapport);
+  photosynthesis.clearTimesteps();
+  requestAnimationFrame(animate);
 })();
 
 const ground = new Mesh(
@@ -81,7 +87,7 @@ const ground = new Mesh(
 );
 ground.position.set(0, -0.01, 0);
 ground.rotateX(Math.PI / 2);
-//scene.add(ground);
+scene.add(ground);
 scene.background = new Color(0.9, 0.9, 0.9);
 
 //controls.update() must be called after any manual changes to the camera's transform
@@ -89,6 +95,23 @@ camera.position.set(-20, 8, 3);
 camera.lookAt(0, 0, 0);
 scene.add(camera);
 controls.update();
+
+const diffuseLight = new DiffuseLight(31, 5, 1024);
+const diffuseSphere = new SphereGeometry(1, 21, 11);
+diffuseSphere.applyMatrix4(new Matrix4().makeTranslation(0, 0, 5));
+const diffuseIndicator = new InstancedMesh(
+  diffuseSphere,
+  new MeshBasicMaterial({
+    color: "green",
+  }),
+  diffuseLight.transforms.length
+);
+diffuseLight.add(diffuseIndicator);
+diffuseLight.transforms.forEach((matrix, i) => {
+  diffuseIndicator.setMatrixAt(i, matrix);
+});
+diffuseIndicator.needsUpdate = true;
+scene.add(diffuseLight);
 
 const sun = new Sunlight(5, 1024);
 sun.position.set(0, 6, 0);
@@ -118,6 +141,7 @@ const setTime = (time = undefined) => {
 };
 
 const photosynthesis = new Photosynthesis(renderer, 1024);
+window.photosynthesis = photosynthesis;
 
 const drawViewOfSun = (() => {
   const scene = new Scene();
@@ -129,7 +153,8 @@ const drawViewOfSun = (() => {
   const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
   camera.lookAt(0, 0, 1);
   return () => {
-    planeMaterial.map = photosynthesis.summarizer.summaryTargets[0].texture;
+    planeMaterial.map = photosynthesis.summaryTargets[0].texture;
+    // planeMaterial.map = diffuseLight.target.texture;
     renderer.render(scene, camera);
   };
 })();
@@ -137,16 +162,10 @@ const drawViewOfSun = (() => {
 const settings = {
   speed: 3,
   latitude: 10,
-  growSpeed: 0.01, // mm/h
-  lightRequired: 1500, // px / m^3
 };
 const gui = new dat.GUI();
 gui.add(settings, "speed", 0, 10, 0.1).name("Speed (h/s)");
 gui.add(settings, "latitude", 0, 90, 0.1).name("Latitude (°)");
-const folder = gui.addFolder("ODE");
-folder.add(settings, "growSpeed", 0, 0.02, 0.001).name("Growth (mm/h)");
-folder.add(settings, "lightRequired", 400, 3000, 1).name("Light (px/m³)");
-folder.open();
 
 const clock = new Clock();
 let secondsCounter = 0;
@@ -154,7 +173,6 @@ let lastTime = convertToHours(secondsCounter);
 function animate() {
   stats.begin();
 
-  // required if controls.enableDamping or controls.autoRotate are set to true
   controls.update();
 
   sunAngle.rotation.set(0, 0, (Math.PI / 180) * settings.latitude);
@@ -164,6 +182,7 @@ function animate() {
   lastTime = hours;
   setTime(hours);
   sunIndicator.visible = true;
+  diffuseIndicator.visible = true;
   renderer.setScissorTest(false);
   renderer.setViewport(
     0,
@@ -173,13 +192,13 @@ function animate() {
   );
   renderer.render(scene, camera);
   sunIndicator.visible = false;
+  diffuseIndicator.visible = false;
 
-  const photo = photosynthesis.calculate(scene, [sun]);
-  window.photo = photo;
+  photosynthesis.calculate(+new Date(), scene, [sun]);
 
   renderer.setScissorTest(true);
   {
-    const size = 500;
+    const size = 300;
     renderer.setScissor(0, 0, size, size);
     renderer.setViewport(0, 0, size, size);
   }
@@ -188,7 +207,6 @@ function animate() {
   stats.end();
   requestAnimationFrame(animate);
 }
-requestAnimationFrame(animate);
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;

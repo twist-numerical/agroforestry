@@ -7,7 +7,7 @@ import {
   WebGLRenderer,
 } from "three";
 import * as THREE from "three";
-import Summarizer from "./Summarizer";
+import Photosynthesis from "./Photosynthesis";
 
 export default abstract class UVLight extends Object3D {
   __materials = new Map<number, Material>();
@@ -37,6 +37,6 @@ export default abstract class UVLight extends Object3D {
   abstract render(
     renderer: WebGLRenderer,
     scene: Scene,
-    summarizer: Summarizer
+    photosynthesis: Photosynthesis
   ): void;
 }

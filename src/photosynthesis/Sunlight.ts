@@ -9,7 +9,7 @@ import {
 } from "three";
 import * as THREE from "three";
 import UVLight from "./UVLight";
-import Summarizer from "./Summarizer";
+import Photosynthesis from "./Photosynthesis";
 
 export default class Sunlight extends UVLight {
   light = new THREE.DirectionalLight(0xaaaaaa);
@@ -41,10 +41,14 @@ export default class Sunlight extends UVLight {
     });
   }
 
-  render(renderer: WebGLRenderer, scene: Scene, summarizer: Summarizer) {
+  render(
+    renderer: WebGLRenderer,
+    scene: Scene,
+    photosynthesis: Photosynthesis
+  ) {
     renderer.setRenderTarget(this.target);
     renderer.render(scene, this.camera);
-    return summarizer.add(
+    photosynthesis.addLight(
       this.target.texture,
       this.target.width,
       this.target.height
