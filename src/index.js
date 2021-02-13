@@ -13,12 +13,13 @@ import {
   InstancedMesh,
   SphereGeometry,
   Matrix4,
+  DoubleSide,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Photosynthesis from "./photosynthesis/Photosynthesis";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
-import loadLidarTreeGeometry from "./loadLidarTreeGeometry.js";
+import loadLidarTree from "./loadLidarTree";
 import Sunlight from "./photosynthesis/Sunlight.ts";
 import DiffuseLight from "./photosynthesis/DiffuseLight.ts";
 import SensorGrid from "./photosynthesis/SensorGrid.ts";
@@ -92,7 +93,6 @@ diffuseLight.add(diffuseIndicator);
 diffuseLight.transforms.forEach((matrix, i) => {
   diffuseIndicator.setMatrixAt(i, matrix);
 });
-diffuseIndicator.needsUpdate = true;
 scene.add(diffuseLight);
 
 const sun = new Sunlight(viewSize, renderSize);
@@ -145,7 +145,7 @@ const settings = {
   speed: 3,
   latitude: 10,
   display: {
-    diffuseLight: true,
+    diffuseLight: false,
   },
 };
 {
@@ -205,21 +205,22 @@ window.addEventListener("resize", () => {
 });
 
 (async () => {
-  const lidarTreeGeometry = new (await loadLidarTreeGeometry())(5);
+  const { LidarTree } = await loadLidarTree();
+  const basisLidarTree = new LidarTree(
+    addPhotosynthesisMaterial(
+      new MeshPhongMaterial({
+        color: "brown",
+        side: THREE.DoubleSide,
+      })
+    )
+  );
   const trees = new Group();
 
   for (let i = 0; i <= 0; ++i) {
-    const lidarTree = new Mesh(
-      lidarTreeGeometry,
-      addPhotosynthesisMaterial(
-        new MeshPhongMaterial({
-          color: "blue",
-        })
-      )
-    );
-    lidarTree.position.set(i * 2, 0, 4);
-    lidarTree.rotateY(Math.random() * Math.PI * 2);
-    lidarTree.rotateX(-Math.PI / 2);
+    const lidarTree = basisLidarTree.clone();
+    //lidarTree.position.set(i * 2, 0, 4);
+    // lidarTree.rotateY(Math.random() * Math.PI * 2);
+    // lidarTree.rotateX(-Math.PI / 2);
     trees.add(lidarTree);
   }
   scene.add(trees);
