@@ -19,7 +19,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Photosynthesis from "./photosynthesis/Photosynthesis";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
-import loadLidarTree from "./loadLidarTree";
+import loadLidarTree from "./photosynthesis/loadLidarTree";
 import Sunlight from "./photosynthesis/Sunlight.ts";
 import DiffuseLight from "./photosynthesis/DiffuseLight.ts";
 import SensorGrid from "./photosynthesis/SensorGrid.ts";
@@ -205,7 +205,7 @@ window.addEventListener("resize", () => {
 });
 
 (async () => {
-  const { LidarTree } = await loadLidarTree();
+  const { LidarTree, Leafs } = await loadLidarTree();
   const basisLidarTree = new LidarTree(
     addPhotosynthesisMaterial(
       new MeshPhongMaterial({
@@ -218,7 +218,14 @@ window.addEventListener("resize", () => {
 
   for (let i = 0; i <= 0; ++i) {
     const lidarTree = basisLidarTree.clone();
-    //lidarTree.position.set(i * 2, 0, 4);
+    const leafs = new Leafs({
+      leafLength: 0.3,
+      leafWidth: 0.05,
+      leafsPerTwig: 10,
+    });
+    leafs.setGrowth(1);
+    lidarTree.add(leafs);
+    // lidarTree.position.set(i * 2, 0, 4);
     // lidarTree.rotateY(Math.random() * Math.PI * 2);
     // lidarTree.rotateX(-Math.PI / 2);
     trees.add(lidarTree);
