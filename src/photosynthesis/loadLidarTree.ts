@@ -18,8 +18,6 @@ import {
 import lidarTreeData from "./agroforestry.txt";
 
 class LeafMaterial extends RawShaderMaterial {
-  photosynthesisMaterial: LeafMaterial = this;
-
   constructor() {
     super({
       uniforms: {
@@ -61,8 +59,14 @@ void main() {
   }
   copy(source: LeafMaterial) {
     super.copy(source);
-    this.photosynthesisMaterial = this;
+    this.color = source.color;
     return this;
+  }
+  get color() {
+    return this.uniforms.color.value;
+  }
+  set color(color) {
+    this.uniforms.color.value = color;
   }
 }
 const leafMaterial = new LeafMaterial();
@@ -108,13 +112,13 @@ export default async () => {
         });
       }
     },
-    Leafs: class Leafs extends Mesh {
+    Leaves: class Leaves extends Mesh {
       material: RawShaderMaterial;
 
       constructor(parameters: {
         leafLength?: number;
         leafWidth?: number;
-        leafsPerTwig?: number;
+        leavesPerTwig?: number;
         maxTwigRadius?: number;
       }) {
         const settings = {
@@ -132,7 +136,7 @@ export default async () => {
         const twigs = segments.filter(
           ({ radius }) => radius < settings.maxTwigRadius
         );
-        const instances = twigs.length * settings.leafsPerTwig;
+        const instances = twigs.length * settings.leavesPerTwig;
         const offset = new InstancedBufferAttribute(
           new Float32Array(3 * instances),
           3
@@ -151,7 +155,7 @@ export default async () => {
         let index = 0;
         twigs.forEach(({ start, end, radius }) => {
           if (radius < settings.maxTwigRadius) {
-            for (let i = 0; i < settings.leafsPerTwig; ++i) {
+            for (let i = 0; i < settings.leavesPerTwig; ++i) {
               randomOnSphere(up);
               randomOnSphere(side).cross(up);
               const leafSize = Math.sqrt(Math.random());
@@ -170,8 +174,9 @@ export default async () => {
         geometry.setAttribute("offset", offset);
         geometry.setAttribute("rotateUp", rotateUp);
         geometry.setAttribute("rotateSide", rotateSide);
-
-        super(geometry, leafMaterial.clone());
+        const material = leafMaterial.clone();
+        (material as any).photosynthesisMaterial = leafMaterial.clone();
+        super(geometry, material);
 
         this.frustumCulled = false;
       }

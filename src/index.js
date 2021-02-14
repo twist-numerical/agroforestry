@@ -14,6 +14,7 @@ import {
   SphereGeometry,
   Matrix4,
   DoubleSide,
+  Vector3,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Photosynthesis from "./photosynthesis/Photosynthesis";
@@ -23,6 +24,7 @@ import loadLidarTree from "./photosynthesis/loadLidarTree";
 import Sunlight from "./photosynthesis/Sunlight.ts";
 import DiffuseLight from "./photosynthesis/DiffuseLight.ts";
 import SensorGrid from "./photosynthesis/SensorGrid.ts";
+import Sun from "./Sun";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -95,32 +97,19 @@ diffuseLight.transforms.forEach((matrix, i) => {
 });
 scene.add(diffuseLight);
 
-const sun = new Sunlight(viewSize, renderSize);
-sun.position.set(0, 20, 0);
+const sun = new Sun();
+
+const sunlight = new Sunlight(viewSize, renderSize);
+sunlight.lookAt(new Vector3(1, 0, 0));
+sun.add(sunlight);
 const sunIndicator = new Mesh(
   new SphereGeometry(1, 21, 11),
   new MeshBasicMaterial({ color: "yellow" })
 );
+sunIndicator.position.set(-10, 0, 0);
 sun.add(sunIndicator);
 
-const sunAngle = new Group();
-const sunRotation = new Group();
-
-sunRotation.add(sun);
-sunAngle.add(sunRotation);
-scene.add(sunAngle);
-
-const convertToHours = (seconds) => {
-  // 1 h / s
-  const hours = 60 * 60 * (seconds / 60 / 60);
-  // skip night
-  return hours - (hours % 24) / 2;
-};
-
-const setTime = (time = undefined) => {
-  if (time === undefined) time = getTime();
-  sunRotation.rotation.set(2 * ((6 - time) / 24) * Math.PI, 0, 0);
-};
+scene.add(sun);
 
 const photosynthesis = new Photosynthesis(renderer, 1024);
 window.photosynthesis = photosynthesis;
@@ -128,14 +117,14 @@ window.photosynthesis = photosynthesis;
 const drawViewOfSun = (() => {
   const scene = new Scene();
   const planeMaterial = new MeshBasicMaterial();
-  planeMaterial.map = sun.target.texture;
+  planeMaterial.map = sunlight.target.texture;
   const plane = new Mesh(new PlaneGeometry(2, 2), planeMaterial);
   plane.scale.set(-1, 1, 1);
   scene.add(plane);
   const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
   camera.lookAt(0, 0, 1);
   return () => {
-    planeMaterial.map = photosynthesis.summaryTargets[0].texture;
+    // planeMaterial.map = photosynthesis.summaryTargets[0].texture;
     // planeMaterial.map = diffuseLight.target.texture;
     renderer.render(scene, camera);
   };
@@ -144,6 +133,7 @@ const drawViewOfSun = (() => {
 const settings = {
   speed: 3,
   latitude: 10,
+  leafGrowth: 1,
   display: {
     diffuseLight: false,
   },
@@ -152,6 +142,7 @@ const settings = {
   const gui = new dat.GUI();
   gui.add(settings, "speed", 0, 10, 0.1).name("Speed (h/s)");
   gui.add(settings, "latitude", 0, 90, 0.1).name("Latitude (°)");
+  gui.add(settings, "leafGrowth", 0, 1, 0.01).name("Leaf growth");
   const display = gui.addFolder("display");
   display.add(settings.display, "diffuseLight").name("Diffuse light");
   display.open();
@@ -159,17 +150,22 @@ const settings = {
 
 const clock = new Clock();
 let secondsCounter = 0;
-let lastTime = convertToHours(secondsCounter);
+let leaves = undefined;
 function animate() {
   stats.begin();
 
   controls.update();
 
-  sunAngle.rotation.set(0, 0, (Math.PI / 180) * settings.latitude);
-  secondsCounter += settings.speed * clock.getDelta();
-  const hours = convertToHours(secondsCounter);
-  lastTime = hours;
-  setTime(hours);
+  secondsCounter += settings.speed * 60 * 60 * clock.getDelta();
+  sun.setLatitude(settings.latitude);
+  sun.setSeconds(secondsCounter);
+
+  if (leaves) {
+    leaves.material.uniforms.growth.value = settings.leafGrowth;
+    leaves.material.photosynthesisMaterial.uniforms.growth.value =
+      settings.leafGrowth;
+  }
+
   sunIndicator.visible = true;
   diffuseIndicator.visible = settings.display.diffuseLight;
   renderer.setScissorTest(false);
@@ -183,7 +179,7 @@ function animate() {
   sunIndicator.visible = false;
   diffuseIndicator.visible = false;
 
-  photosynthesis.calculate(+new Date(), scene, [sun]);
+  photosynthesis.calculate(+new Date(), scene, [sunlight]);
 
   renderer.setScissorTest(true);
   {
@@ -205,7 +201,7 @@ window.addEventListener("resize", () => {
 });
 
 (async () => {
-  const { LidarTree, Leafs } = await loadLidarTree();
+  const { LidarTree, Leaves } = await loadLidarTree();
   const basisLidarTree = new LidarTree(
     addPhotosynthesisMaterial(
       new MeshPhongMaterial({
@@ -218,13 +214,13 @@ window.addEventListener("resize", () => {
 
   for (let i = 0; i <= 0; ++i) {
     const lidarTree = basisLidarTree.clone();
-    const leafs = new Leafs({
+    leaves = new Leaves({
       leafLength: 0.3,
       leafWidth: 0.05,
-      leafsPerTwig: 10,
+      leavesPerTwig: 10,
     });
-    leafs.setGrowth(1);
-    lidarTree.add(leafs);
+    leaves.setGrowth(1);
+    lidarTree.add(leaves);
     // lidarTree.position.set(i * 2, 0, 4);
     // lidarTree.rotateY(Math.random() * Math.PI * 2);
     // lidarTree.rotateX(-Math.PI / 2);

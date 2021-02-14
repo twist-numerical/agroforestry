@@ -30,7 +30,7 @@ export default class Sunlight extends UVLight {
       -clipping,
       clipping
     );
-    this.camera.lookAt(0, -1, 0);
+    this.camera.lookAt(0, 0, 1);
     this.add(this.camera);
 
     this.target = new WebGLRenderTarget(renderSize, renderSize);

@@ -110,13 +110,11 @@ scene.add(ground);
 const clock = new Clock();
 function animate() {
   stats.begin();
-  const now = 1000 * clock.getElapsedTime(); // seconds in year;
+  const now = 10000 * clock.getElapsedTime(); // seconds in year;
   if (now > 24 * 60 * 60 * 365) return;
 
   sun.setSeconds(now);
   sun.setLatitude(settings.latitude);
-
-  // controls.update();
 
   renderer.render(scene, camera);
 

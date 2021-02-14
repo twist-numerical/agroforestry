@@ -37,6 +37,7 @@ export default class Sun extends Object3D {
   }
 
   setSeconds(seconds: number) {
+    // seconds since the 21st of december at noon
     const inDay = seconds / 60 / 60 / 24;
     this.dayRotation = Math.PI * 2 * inDay;
     const inYear = inDay / 365.242199;
@@ -51,8 +52,8 @@ export default class Sun extends Object3D {
     _rotation.identity();
     rotate(_rotation, axis.z, -this.latitudeRotation);
     rotate(_rotation, axis.y, -this.dayRotation);
-    rotate(_rotation, axis.z, -this.tilt);
-    rotate(_rotation, axis.y, -this.yearRotation);
+    rotate(_rotation, axis.z, this.tilt);
+    rotate(_rotation, axis.y, this.yearRotation);
 
     this.matrix.makeRotationFromQuaternion(_rotation);
     this.matrixWorldNeedsUpdate = true;
