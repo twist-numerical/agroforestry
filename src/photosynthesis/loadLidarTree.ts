@@ -115,12 +115,14 @@ export default async () => {
     Leaves: class Leaves extends Mesh {
       material: RawShaderMaterial;
 
-      constructor(parameters: {
-        leafLength?: number;
-        leafWidth?: number;
-        leavesPerTwig?: number;
-        maxTwigRadius?: number;
-      }) {
+      constructor(
+        parameters: {
+          leafLength?: number;
+          leafWidth?: number;
+          leavesPerTwig?: number;
+          maxTwigRadius?: number;
+        } = {}
+      ) {
         const settings = {
           leafLength: 0.1,
           leafWidth: 0.1,
@@ -183,6 +185,9 @@ export default async () => {
 
       setGrowth(growth: number) {
         this.material.uniforms.growth.value = growth;
+        const pMaterial = (this.material as any).photosynthesisMaterial;
+        if (pMaterial instanceof RawShaderMaterial)
+          pMaterial.uniforms.growth.value = growth;
       }
     },
   };
