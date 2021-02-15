@@ -22,25 +22,21 @@ function rotate(quat: Quaternion, axis: Vector3, angle: number) {
 }
 
 const _rotation = new Quaternion();
+
+const siderialPeriod = (23 * 60 + 56) * 60 + 4.1; // 23h 56m 4.1s
+const daysPerYear = 365.242199;
+const tilt = 23.4392811 * (Math.PI / 180);
+
 export default class Sun extends Object3D {
   dayRotation = 0;
   yearRotation = 0;
-  tilt = 23.4392811 * (Math.PI / 180);
   latitudeRotation = Math.PI;
-
-  constructor() {
-    super();
-
-    const material = new MeshNormalMaterial({});
-    // this.add(new Mesh(new SphereGeometry(5, 32, 19), material));
-    // this.add(new Mesh(new CylinderGeometry(0.5, 0.5, 16), material));
-  }
 
   setSeconds(seconds: number) {
     // seconds since the 21st of december at noon
-    const inDay = seconds / 60 / 60 / 24;
+    const inDay = seconds / siderialPeriod;
     this.dayRotation = Math.PI * 2 * inDay;
-    const inYear = inDay / 365.242199;
+    const inYear = inDay / daysPerYear;
     this.yearRotation = Math.PI * 2 * inYear;
   }
 
@@ -52,7 +48,7 @@ export default class Sun extends Object3D {
     _rotation.identity();
     rotate(_rotation, axis.z, -this.latitudeRotation);
     rotate(_rotation, axis.y, -this.dayRotation);
-    rotate(_rotation, axis.z, this.tilt);
+    rotate(_rotation, axis.z, tilt);
     rotate(_rotation, axis.y, this.yearRotation);
 
     this.matrix.makeRotationFromQuaternion(_rotation);

@@ -22,8 +22,9 @@ import UVLight from "./UVLight";
 
 const black = new Color("black");
 const blockTimesteps = 64;
-const blockWidth = 512;
-const blockHeight = 512;
+const blockWidth = 256;
+const blockHeight = 256;
+const idPerTexture = 256;
 
 const summaryMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
@@ -148,29 +149,80 @@ function newDataRenderTarget(width: number, height: number) {
   return target;
 }
 
-export default class Photosynthesis {
+class SummaryBlock {
   targets: [WebGLRenderTarget, WebGLRenderTarget];
-  scene: Scene;
+  summaryTargets: [WebGLRenderTarget, WebGLRenderTarget];
+  photosynthesisIDs: number[];
+  geometry: BufferGeometry;
+  size: number;
   camera: OrthographicCamera;
+
+  constructor(renderer: WebGLRenderer, size: number) {
+    this.size = size;
+    this.camera = new OrthographicCamera(0, blockWidth, 0, size, -1, 1);
+
+    this.targets = [0, 1].map(() => newDataRenderTarget(blockWidth, size)) as [
+      WebGLRenderTarget,
+      WebGLRenderTarget
+    ];
+    this.summaryTargets = [0, 1].map(() =>
+      newDataRenderTarget(blockTimesteps, size)
+    ) as [WebGLRenderTarget, WebGLRenderTarget];
+
+    const vertices = new BufferAttribute(new Float32Array(size * 6 * 2), 2);
+    const w = blockWidth;
+    for (let i = 0; i < size; ++i) {
+      vertices.set([0, i, w, i, w, i + 1, 0, i, w, i + 1, 0, i + 1], 6 * 2 * i);
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", vertices);
+    geometry.setAttribute(
+      "id",
+      new BufferAttribute(new Float32Array(size * 6), 1)
+    );
+
+    this.geometry = geometry;
+  }
+
+  setIDs(ids: number[]) {
+    if (ids.length != this.size)
+      return console.error("SummaryBlock should not change in size.");
+    this.photosynthesisIDs = ids;
+    const idBuffer = this.geometry.getAttribute("id") as BufferAttribute;
+    ids.forEach((id, i) => {
+      idBuffer.set([id, id, id, id, id, id], 6 * i);
+    });
+  }
+
+  dispose() {
+    this.geometry.dispose();
+    this.targets.forEach((t) => t.dispose());
+    this.summaryTargets.forEach((t) => t.dispose());
+  }
+}
+
+export default class Photosynthesis {
+  scene: Scene;
   plane: Mesh;
   photosynthesisIDs: number[];
   renderer: WebGLRenderer;
   fromZero = true;
   timestepIndex = 0;
-  private summaryTargets: [WebGLRenderTarget, WebGLRenderTarget];
-  private summaryBuffer: Float32Array;
-  private internalTimesteps: [number, number[]][] = [];
+  blocks: SummaryBlock[] = [];
+  private summaryBuffer: Float32Array = new Float32Array(
+    blockTimesteps * idPerTexture
+  );
+  private internalTimesteps: number[] = [];
   private timesteps: [number, Map<number, number>][] = [];
   __colors = new Map<number, Color>();
 
   constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
     this.scene = new Scene();
-    this.camera = new OrthographicCamera(0, blockWidth, 0, 1, -1, 1);
     this.plane = new Mesh(new BufferGeometry(), combineMaterial);
     this.plane.frustumCulled = false;
     this.scene.add(this.plane);
-    this.scene.add(this.camera);
   }
 
   private getColor(photosynthesisID?: number) {
@@ -216,59 +268,42 @@ export default class Photosynthesis {
     return photosynthesisMaterial;
   }
 
-  private setIDs(ids: number[]) {
-    if (!this.fromZero)
-      console.warn(".endTimestep() shoud be called before setting new ids");
-    if (
-      this.photosynthesisIDs === undefined ||
-      ids.length != this.photosynthesisIDs.length
-    ) {
-      this.flush();
-      if (this.targets !== undefined) {
-        this.targets.forEach((t) => t.dispose());
-      }
-      this.targets = [0, 1].map(() =>
-        newDataRenderTarget(blockWidth, ids.length)
-      ) as [WebGLRenderTarget, WebGLRenderTarget];
-      if (this.summaryTargets !== undefined) {
-        this.summaryTargets.forEach((t) => t.dispose());
-      }
-      this.summaryTargets = [0, 1].map(() =>
-        newDataRenderTarget(blockTimesteps, ids.length)
-      ) as [WebGLRenderTarget, WebGLRenderTarget];
-      this.summaryBuffer = new Float32Array(blockTimesteps * ids.length);
-
-      this.camera.bottom = ids.length;
-      this.camera.updateProjectionMatrix();
-      this.plane.geometry.dispose();
-      this.plane.geometry = new BufferGeometry();
-
-      const vertices = new BufferAttribute(
-        new Float32Array(ids.length * 6 * 2),
-        2
-      );
-      const w = blockWidth;
-      for (let i = 0; i < ids.length; ++i) {
-        vertices.set(
-          [0, i, w, i, w, i + 1, 0, i, w, i + 1, 0, i + 1],
-          6 * 2 * i
-        );
-      }
-
-      this.plane.geometry.setAttribute("position", vertices);
-
-      this.plane.geometry.setAttribute(
-        "id",
-        new BufferAttribute(new Float32Array(ids.length * 6), 1)
-      );
+  setIDs(ids: number[]) {
+    if (this.photosynthesisIDs !== undefined) {
+      let equals = true;
+      ids.forEach((id, i) => {
+        equals &&= id == this.photosynthesisIDs[i];
+      });
+      if (equals) return;
     }
-
     this.photosynthesisIDs = ids;
 
-    const idBuffer = this.plane.geometry.getAttribute("id") as BufferAttribute;
-    ids.forEach((id, i) => {
-      idBuffer.set([id, id, id, id, id, id], 6 * i);
-    });
+    this.flush();
+
+    const blockCache = new Set<SummaryBlock>(this.blocks);
+    this.blocks = [];
+
+    for (let i = 0; i < ids.length; i += idPerTexture) {
+      const length = Math.min(ids.length - i, idPerTexture);
+
+      let block: SummaryBlock = undefined;
+      for (const cacheBlock of blockCache)
+        if (cacheBlock.size == length) {
+          block = cacheBlock;
+          break;
+        }
+
+      if (block == undefined) {
+        block = new SummaryBlock(this.renderer, length);
+      } else {
+        blockCache.delete(block);
+      }
+
+      block.setIDs(ids.slice(i, i + length));
+      this.blocks.push(block);
+    }
+
+    for (const block of blockCache) block.dispose();
   }
 
   addLight(
@@ -280,35 +315,41 @@ export default class Photosynthesis {
     this.plane.material = combineMaterial;
     const uniforms = combineMaterial.uniforms;
     uniforms.data.value = texture;
-    uniforms.canvasSize.value = [blockWidth, this.photosynthesisIDs.length];
     uniforms.size.value = [width, height];
     uniforms.pixelArea.value = pixelArea;
 
     for (let x = 0; x < width; x += blockWidth)
       for (let y = 0; y < height; y += blockHeight) {
-        this.targets.reverse();
-        uniforms.totals.value = this.targets[1].texture;
         uniforms.offset.value = [x, y];
         uniforms.fromZero.value = this.fromZero;
         this.fromZero = false;
-        this.renderer.setRenderTarget(this.targets[0]);
-        this.renderer.render(this.scene, this.camera);
+        this.blocks.forEach((block) => {
+          block.targets.reverse();
+          uniforms.canvasSize.value = [blockWidth, block.size];
+          uniforms.totals.value = block.targets[1].texture;
+          this.plane.geometry = block.geometry;
+          this.renderer.setRenderTarget(block.targets[0]);
+          this.renderer.render(this.scene, block.camera);
+        });
       }
   }
 
   private endTimestep(time: number) {
-    this.summaryTargets.reverse();
     this.plane.material = summaryMaterial;
     const uniforms = summaryMaterial.uniforms;
-    uniforms.data.value = this.targets[0].texture;
-    uniforms.canvasHeight.value = this.photosynthesisIDs.length;
     uniforms.timestep.value = this.internalTimesteps.length;
-    uniforms.history.value = this.summaryTargets[1].texture;
-    this.renderer.setRenderTarget(this.summaryTargets[0]);
-    this.renderer.render(this.scene, this.camera);
 
-    this.internalTimesteps.push([time, this.photosynthesisIDs]);
-    this.fromZero = true;
+    this.blocks.forEach((block) => {
+      block.summaryTargets.reverse();
+      uniforms.data.value = block.targets[0].texture;
+      uniforms.canvasHeight.value = block.size;
+      uniforms.history.value = block.summaryTargets[1].texture;
+      this.renderer.setRenderTarget(block.summaryTargets[0]);
+      this.renderer.render(this.scene, block.camera);
+
+      this.fromZero = true;
+    });
+    this.internalTimesteps.push(time);
 
     if (this.internalTimesteps.length >= blockTimesteps) {
       this.flush();
@@ -318,28 +359,29 @@ export default class Photosynthesis {
   flush() {
     if (this.internalTimesteps.length == 0) return;
 
-    this.renderer.readRenderTargetPixels(
-      this.summaryTargets[0],
-      0,
-      0,
-      blockTimesteps,
-      this.photosynthesisIDs.length,
-      this.summaryBuffer
-    );
+    const data = this.internalTimesteps.map((time): [
+      number,
+      Map<number, number>
+    ] => [time, new Map<number, number>()]);
 
-    this.timesteps.push(
-      ...this.internalTimesteps.map(([time, ids], i): [
-        number,
-        Map<number, number>
-      ] => {
-        const data = new Map<number, number>();
-        ids.forEach((id, j) => {
+    this.blocks.forEach((block) => {
+      this.renderer.readRenderTargetPixels(
+        block.summaryTargets[0],
+        0,
+        0,
+        blockTimesteps,
+        block.size,
+        this.summaryBuffer
+      );
+
+      data.forEach(([time, map], i) => {
+        block.photosynthesisIDs.forEach((id, j) => {
           const index = blockTimesteps * j + i;
-          data.set(id, this.summaryBuffer[index]);
+          map.set(id, this.summaryBuffer[index]);
         });
-        return [time, data];
-      })
-    );
+      });
+    });
+    this.timesteps.push(...data);
     this.internalTimesteps = [];
   }
 
@@ -384,6 +426,8 @@ export default class Photosynthesis {
 
   clearTimesteps() {
     this.flush();
+    const timesteps = this.timesteps;
     this.timesteps = [];
+    return timesteps;
   }
 }

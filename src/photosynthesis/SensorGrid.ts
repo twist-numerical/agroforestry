@@ -22,13 +22,15 @@ export default class SensorGrid extends Object3D {
     const dy = height / sensorsY;
     let photosynthesisID = 0;
 
+    const geometry = new PlaneGeometry(dx, dy);
+
     for (let i = 0; i < sensorsX; ++i) {
       const x = dx * (i + 0.5 - sensorsX / 2);
       const row = [];
       for (let j = 0; j < sensorsY; ++j) {
         const y = dy * (j + 0.5 - sensorsY / 2);
         const sensor = new Mesh(
-          new PlaneGeometry(dx, dy),
+          geometry,
           new MeshPhongMaterial({
             color: new Color().setHSL(Math.random(), 0.9, 0.6),
             side: DoubleSide,

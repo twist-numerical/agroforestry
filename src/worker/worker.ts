@@ -20,7 +20,7 @@ import loadLidarTree from "../photosynthesis/loadLidarTree";
 import Sunlight from "../photosynthesis/Sunlight";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
 import SensorGrid from "../photosynthesis/SensorGrid";
-import Sun from "../Sun";
+import Sun from "../photosynthesis/Sun";
 import MessageHandler from "./MessageHandler";
 
 const messageHandler = new MessageHandler((self as any) as Worker);
@@ -32,6 +32,20 @@ function getSetting(object: any, ...args: any[]) {
     object = object[arg];
   }
   return object;
+}
+
+function progress(message: string, value: number) {
+  messageHandler.postMessage({
+    type: "progress",
+    message: "Calculating sunlight",
+    value: value,
+  });
+}
+
+function progressDone() {
+  messageHandler.postMessage({
+    type: "progressDone",
+  });
 }
 
 (async () => {
@@ -85,7 +99,7 @@ function getSetting(object: any, ...args: any[]) {
 
       const viewSize = 30;
       const renderSize = 1024;
-      const sensorGrid = new SensorGrid(20, 5, 20, 5);
+      const sensorGrid = new SensorGrid(64, 40, 16, 10);
       scene.add(sensorGrid);
 
       const camera = new PerspectiveCamera(45, 1, 1, 10000);
@@ -190,9 +204,11 @@ function getSetting(object: any, ...args: any[]) {
         const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
         camera.lookAt(0, 0, 1);
         return () => {
-          // planeMaterial.map = photosynthesis.summaryTargets[0].texture;
-          // planeMaterial.map = diffuseLight.target.texture;
-          this.renderer.render(scene, camera);
+          if (this.photosynthesis.blocks.length) {
+            planeMaterial.map = this.photosynthesis.blocks[0].summaryTargets[0].texture;
+            // planeMaterial.map = diffuseLight.target.texture;
+            this.renderer.render(scene, camera);
+          }
         };
       })();
     }
@@ -207,13 +223,20 @@ function getSetting(object: any, ...args: any[]) {
       }
     }
 
-    calculateSunlight(settings: RenderSettings = {}) {
+    calculateSunlight(timesteps: number[], settings: RenderSettings = {}) {
       this.setSettings(settings);
 
       this.sunIndicator.visible = false;
       this.diffuseIndicator.visible = false;
 
-      this.photosynthesis.calculate(0, this.scene, [this.sunlight]);
+      timesteps.forEach((time, index) => {
+        this.sun.setSeconds(time);
+        this.photosynthesis.calculate(time, this.scene, [this.sunlight]);
+        progress("Calculating sunlight", index / timesteps.length);
+      });
+      const results = this.photosynthesis.clearTimesteps();
+      progressDone();
+      return results;
     }
 
     render(settings: RenderSettings = {}) {
@@ -253,32 +276,36 @@ function getSetting(object: any, ...args: any[]) {
     init({ canvas }) {
       worker = new WorkerAction(canvas);
     },
-    resize(settings: any) {
-      requireWorker().resize(settings);
+    resize(message: any) {
+      requireWorker().resize(message);
     },
-    render(settings: any) {
-      requireWorker().render(settings);
+    render(message: any) {
+      requireWorker().render(message);
 
-      messageHandler.postMessage({
+      messageHandler.reply(message, {
         type: "renderDone",
       });
     },
-    sunlight(settings: any) {
-      requireWorker().calculateSunlight(settings);
+    sunlight(message: any) {
+      const data = requireWorker().calculateSunlight(
+        message.timesteps,
+        message
+      );
 
-      messageHandler.postMessage({
+      messageHandler.reply(message, {
         type: "sunlightDone",
+        data: data,
       });
     },
   };
 
-  for await (const message of messageHandler.messages()) {
-    const action = messages[message.data.type];
+  for await (const messageEvent of messageHandler.messages()) {
+    const action = messages[messageEvent.data.type];
 
     if (action === undefined) {
       console.error(`The action '${action}' is not available`);
     } else {
-      action(message.data);
+      action(messageEvent.data);
     }
   }
 })();

@@ -27,13 +27,25 @@
             margin: 0 0 8px;
             padding: 0;
         }
+
+        #progress-box {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
 
     <script src="index.js"></script>
-    
+
+    <div id="info-box">
+        <div id="progress-box">
+            <label>
+                <p id="progress-message"></p>
+                <progress value=".5" id="progress-bar"></progress>
+            </label>
+        </div>
+    </div>
 </body>
 
 </html>
