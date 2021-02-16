@@ -13,6 +13,10 @@ import * as THREE from "three";
 import UVLight from "./UVLight";
 import Photosynthesis from "./Photosynthesis";
 
+const eye = new Vector3(0, 1, 0);
+const center = new Vector3(0, 0, 0);
+const up = new Vector3(0, 1, 0);
+
 export default class DiffuseLight extends UVLight {
   light = new THREE.DirectionalLight(0xaaaaaa);
   camera: OrthographicCamera;
@@ -20,12 +24,7 @@ export default class DiffuseLight extends UVLight {
   transforms: Matrix4[] = [];
   pixelArea: number;
 
-  constructor(
-    count: number,
-    viewSize: number,
-    renderSize: number,
-    clipping = 100 * viewSize
-  ) {
+  constructor(count: number, viewSize: number, renderSize: number) {
     super();
     this.add(this.light);
 
@@ -34,17 +33,34 @@ export default class DiffuseLight extends UVLight {
       viewSize / 2,
       -viewSize / 2,
       viewSize / 2,
-      -clipping,
-      clipping
+      -10 * viewSize,
+      10 * viewSize
     );
     this.pixelArea = Math.pow(viewSize / renderSize, 2);
     this.camera.matrixAutoUpdate = false;
     this.add(this.camera);
 
-    const eye = new Vector3(0, 1, 0);
-    const center = new Vector3(0, 0, 0);
-    const up = new Vector3(0, 1, 0);
+    this.target = new WebGLRenderTarget(renderSize, renderSize);
 
+    this.setCount(count);
+  }
+
+  setViewSize(viewSize: number) {
+    this.camera.left = -viewSize / 2;
+    this.camera.right = viewSize / 2;
+    this.camera.bottom = -viewSize / 2;
+    this.camera.top = viewSize / 2;
+    this.camera.near = -10 * viewSize;
+    this.camera.far = 10 * viewSize;
+  }
+
+  setRenderSize(size: number) {
+    this.target.dispose();
+    this.target = new WebGLRenderTarget(size, size);
+  }
+
+  setCount(count: number) {
+    this.transforms = [];
     const phi = 0.5 * (1 + Math.sqrt(5));
     const golden_angle = 2 * Math.PI * (2 - phi);
     for (let i = 1; i <= count; ++i) {
@@ -57,8 +73,6 @@ export default class DiffuseLight extends UVLight {
       );
       this.transforms.push(new Matrix4().lookAt(eye, center, up));
     }
-
-    this.target = new WebGLRenderTarget(renderSize, renderSize);
   }
 
   render(

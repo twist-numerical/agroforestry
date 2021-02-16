@@ -22,7 +22,7 @@ export default class SensorGrid
   photosynthesis: Photosynthesis;
   photosynthesisColor: InstancedBufferAttribute;
   color: InstancedBufferAttribute;
-  names: string[] = [];
+  names: string[];
 
   constructor(
     photosynthesis: Photosynthesis,
@@ -31,10 +31,8 @@ export default class SensorGrid
     width: number = 1,
     height: number = 1
   ) {
-    const sensors = [];
     const dx = width / sensorsX;
     const dy = height / sensorsY;
-    let photosynthesisID = 0;
 
     const instances = sensorsX * sensorsY;
     const geometry = new PlaneGeometry(dx, dy);
@@ -46,6 +44,7 @@ export default class SensorGrid
       }),
       instances
     );
+    this.names = [];
     this.photosynthesis = photosynthesis;
 
     this.photosynthesisColor = new InstancedBufferAttribute(
@@ -82,15 +81,23 @@ export default class SensorGrid
     this.instanceColor = this.color;
     this.instanceMatrix.needsUpdate = true;
   }
+
   prePhotosynthesis(): void {
     (this.material as MeshBasicMaterial).color = null;
     this.instanceColor = this.photosynthesisColor;
   }
+
   postPhotosynthesis(): void {
     (this.material as MeshBasicMaterial).color = null;
     this.instanceColor = this.color;
   }
+
   blackPhotosynthesis(): void {
     (this.material as MeshBasicMaterial).color = black;
+  }
+
+  dispose() {
+    this.geometry.dispose();
+    (this.material as MeshBasicMaterial).dispose();
   }
 }

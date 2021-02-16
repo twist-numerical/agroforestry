@@ -17,7 +17,7 @@ export default class Sunlight extends UVLight {
   target: WebGLRenderTarget;
   pixelArea: number;
 
-  constructor(viewSize: number, renderSize: number, clipping = 2 * viewSize) {
+  constructor(viewSize: number, renderSize: number) {
     super();
     this.add(this.light);
 
@@ -27,13 +27,27 @@ export default class Sunlight extends UVLight {
       viewSize / 2,
       -viewSize / 2,
       viewSize / 2,
-      -clipping,
-      clipping
+      -10 * viewSize,
+      10 * viewSize
     );
     this.camera.lookAt(0, 0, 1);
     this.add(this.camera);
 
     this.target = new WebGLRenderTarget(renderSize, renderSize);
+  }
+
+  setRenderSize(renderSize: number) {
+    this.target.dispose();
+    this.target = new WebGLRenderTarget(renderSize, renderSize);
+  }
+
+  setViewSize(viewSize: number) {
+    this.camera.left = -viewSize / 2;
+    this.camera.right = viewSize / 2;
+    this.camera.bottom = -viewSize / 2;
+    this.camera.top = viewSize / 2;
+    this.camera.near = -10 * viewSize;
+    this.camera.far = 10 * viewSize;
   }
 
   getMaterial(photosynthesisID: number, color: Color): Material {
