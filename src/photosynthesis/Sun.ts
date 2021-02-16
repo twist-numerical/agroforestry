@@ -32,16 +32,27 @@ export default class Sun extends Object3D {
   yearRotation = 0;
   latitudeRotation = Math.PI;
 
+  constructor() {
+    super();
+    this.matrixAutoUpdate = false;
+  }
+
   setSeconds(seconds: number) {
-    // seconds since the 21st of december at noon
+    // seconds since the 21st of december at midnight
+    seconds -= 12 * 60 * 60;
     const inDay = seconds / siderialPeriod;
     this.dayRotation = Math.PI * 2 * inDay;
     const inYear = inDay / daysPerYear;
     this.yearRotation = Math.PI * 2 * inYear;
+    this.updateMatrix();
   }
 
   setLatitude(latitude: number) {
     this.latitudeRotation = (Math.PI / 180) * (90 - latitude);
+  }
+
+  isNight(): boolean {
+    return this.matrix.elements[1] > 0;
   }
 
   updateMatrix() {

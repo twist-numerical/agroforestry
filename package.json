@@ -4,13 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "parcel src/index.html",
+    "start": "parcel src/index.html --hmr-port 12345",
     "build": "parcel build --public-url . src/index.html"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ajv": "^7.1.0",
     "dat.gui": "^0.7.7",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.6.0",
     "parcel": "^1.12.4",
     "stats.js": "^0.17.0",
     "three": "^0.125"

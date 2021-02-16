@@ -22,6 +22,7 @@ export default class SensorGrid
   photosynthesis: Photosynthesis;
   photosynthesisColor: InstancedBufferAttribute;
   color: InstancedBufferAttribute;
+  names: string[] = [];
 
   constructor(
     photosynthesis: Photosynthesis,
@@ -72,6 +73,8 @@ export default class SensorGrid
         photosynthesis
           .getColor(id)
           .toArray(this.photosynthesisColor.array, 3 * instanceIndex);
+
+        this.names.push(`Sensor ${x.toFixed(6)}|${y.toFixed(6)}`);
 
         ++instanceIndex;
       }

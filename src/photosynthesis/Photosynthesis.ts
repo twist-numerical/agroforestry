@@ -73,9 +73,9 @@ void main()	{
 
   float y = floor(id / ${summaryWidth.toFixed(1)});
   float x = id - y * ${summaryWidth.toFixed(1)};
-  if(p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || id == 0.0) {
-    x = 0.0;
-    y = 0.0;
+  if(p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) {
+    x = -10.0;
+    y = -10.0;
   }
   
   value = point.b * pixelArea;
@@ -105,8 +105,7 @@ function newDataRenderTarget(width: number, height: number) {
 
 export default class Photosynthesis {
   renderer: WebGLRenderer;
-  private __size: number = 0;
-  private __nextID = 1;
+  private __nextID = 0;
 
   camera = new Camera();
   scene = new Scene();
@@ -180,10 +179,8 @@ export default class Photosynthesis {
   }
 
   private prepareIDsBlocks() {
-    if (this.__size == this.__nextID) return;
-    this.__size = this.__nextID;
-
-    const rows = Math.ceil(this.__size / summaryWidth);
+    const rows = Math.ceil(this.__nextID / summaryWidth);
+    if (this.summaryTarget && rows <= this.summaryTarget.height) return;
 
     if (this.summaryTarget !== undefined) this.summaryTarget.dispose();
     this.summaryTarget = newDataRenderTarget(summaryWidth, rows);
@@ -196,8 +193,11 @@ export default class Photosynthesis {
   }
 
   clear() {
-    this.__nextID = 1;
-    this.__size = 0;
+    this.__nextID = 0;
+    if (this.summaryTarget !== undefined) {
+      this.summaryTarget.dispose();
+      this.summaryTarget = undefined;
+    }
   }
 
   addLight(
@@ -278,6 +278,6 @@ export default class Photosynthesis {
 
     this.renderer.setRenderTarget(null);
 
-    return [...this.summaryBuffer.slice(0, this.__size)];
+    return [...this.summaryBuffer.slice(0, this.__nextID + 1)];
   }
 }

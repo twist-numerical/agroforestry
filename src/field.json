@@ -1,0 +1,29 @@
+{
+  "field": {
+    "size": 32.0,
+    "latitude": 50.5,
+    "rotation": 180.0,
+    "inclination": 2,
+    "inclinationRotation": 45
+  },
+  "trees": [
+    {
+      "position": [-5, 0],
+      "height": 12.5,
+      "leafLength": 0.1,
+      "leafWidth": 0.2,
+      "leavesPerTwig": 10
+    },
+    {
+      "position": [0, 1],
+      "height": 12.5,
+      "leafLength": 0.1,
+      "leafWidth": 0.2,
+      "leavesPerTwig": 10
+    }
+  ],
+  "sensors": {
+    "size": [1.5, 30.5],
+    "count": [20, 20]
+  }
+}

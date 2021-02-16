@@ -22,6 +22,7 @@ import DiffuseLight from "../photosynthesis/DiffuseLight";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import MessageHandler from "./MessageHandler";
+import { range } from "../functional";
 
 function sleep(time: number) {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -48,7 +49,7 @@ function getSetting(object: any, ...args: any[]) {
 function progress(message: string, value: number) {
   messageHandler.postMessage({
     type: "progress",
-    message: "Calculating sunlight",
+    message: message,
     value: value,
   });
 }
@@ -111,8 +112,8 @@ function progressDone() {
       this.photosynthesis = new Photosynthesis(this.renderer);
 
       const viewSize = 30;
-      const renderSize = 2048;
-      const sensorGrid = new SensorGrid(this.photosynthesis, 64, 64, 16, 16);
+      const renderSize = 1024;
+      const sensorGrid = new SensorGrid(this.photosynthesis, 16, 16, 16, 16);
       scene.add(sensorGrid);
 
       const camera = new PerspectiveCamera(45, 1, 1, 10000);
@@ -140,7 +141,6 @@ function progressDone() {
       ground.position.set(0, -0.01, 0);
       ground.rotateX(Math.PI / 2);
       scene.add(ground);
-      scene.background = new Color(0.9, 0.9, 0.9);
 
       camera.position.set(-20, 8, 3);
       camera.lookAt(0, 0, 0);
@@ -233,20 +233,44 @@ function progressDone() {
       }
     }
 
-    async calculateSunlight(
-      timesteps: number[],
-      settings: RenderSettings = {}
-    ) {
+    calculateSunlight(timesteps: number[], settings: RenderSettings = {}) {
+      this.setSettings(settings);
+      this.sunIndicator.visible = false;
+      this.diffuseIndicator.visible = false;
       const results = [];
       progress("Calculating sunlight", 0);
       for (const time of timesteps) {
+        this.sun.setSeconds(time);
+        results.push([
+          time,
+          this.photosynthesis.calculate(this.scene, [this.sunlight]),
+        ]);
+        progress("Calculating sunlight", results.length / timesteps.length);
+      }
+      progressDone();
+      return results;
+    }
+
+    calculateYear(stepSize: number, settings: RenderSettings = {}) {
+      const results = [];
+      progress("Calculating full year", 0);
+      for (const day of range(0, 366)) {
         this.setSettings(settings);
         this.sunIndicator.visible = false;
         this.diffuseIndicator.visible = false;
-        this.sun.setSeconds(time);
-        const data = this.photosynthesis.calculate(this.scene, [this.sunlight]);
-        results.push([time, data]);
-        progress("Calculating sunlight", results.length / timesteps.length);
+
+        for (const time of range(0, 24 * 60 * 60, stepSize)) {
+          const timestamp = 24 * 60 * 60 * day + time;
+          this.sun.setSeconds(timestamp);
+          console.log(day, time, timestamp, this.sun.isNight());
+          if (!this.sun.isNight()) {
+            results.push([
+              timestamp,
+              this.photosynthesis.calculate(this.scene, [this.sunlight]),
+            ]);
+          }
+        }
+        progress("Calculating full year", day / 355);
       }
       progressDone();
       return results;
@@ -254,6 +278,12 @@ function progressDone() {
 
     render(settings: RenderSettings = {}) {
       this.setSettings(settings);
+
+      if (this.sun.isNight()) {
+        this.scene.background = new Color(0.2, 0.2, 0.2);
+      } else {
+        this.scene.background = new Color(0.9, 0.9, 0.9);
+      }
 
       this.sunIndicator.visible = true;
       this.diffuseIndicator.visible = getSetting(
@@ -299,8 +329,17 @@ function progressDone() {
         type: "renderDone",
       });
     },
-    async sunlight(message: any) {
-      const data = await requireWorker().calculateSunlight(
+    year(message: any) {
+      const data = requireWorker().calculateYear(message.stepSize, message);
+      console.log(data);
+
+      messageHandler.reply(message, {
+        type: "yearDone",
+        data: data,
+      });
+    },
+    sunlight(message: any) {
+      const data = requireWorker().calculateSunlight(
         message.timesteps,
         message
       );

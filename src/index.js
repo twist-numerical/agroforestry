@@ -3,6 +3,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "stats.js";
 import * as dat from "dat.gui";
 import MessageHandler from "./worker/MessageHandler";
+import { saveAs } from "file-saver";
+import { map } from "./functional";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -66,6 +68,32 @@ async function calculateSunlight() {
   console.log(messageEvent.data.data);
 }
 
+const calculateYearSettings = {
+  stepSize: 60,
+  async calculateYear() {
+    const messageEvent = await worker.onReply(
+      worker.postMessage({
+        type: "year",
+        stepSize: 60 * calculateYearSettings.stepSize,
+      })
+    );
+    const data = messageEvent.data.data;
+
+    saveAs(
+      new Blob(
+        map(
+          ([time, row]) =>
+            time + "," + row.map((v) => v.toPrecision(8)).join(",") + "\n",
+          data
+        ),
+        {
+          type: "text/csv",
+        }
+      )
+    );
+  },
+};
+
 const gui = new dat.GUI();
 {
   gui.add(settings, "speed", 0, 10, 0.1).name("Speed (h/s)");
@@ -73,11 +101,20 @@ const gui = new dat.GUI();
   gui.add(settings, "leafGrowth", 0, 1, 0.01).name("Leaf growth");
   gui.add(settings, "day", 0, 365, 1).name("Day");
   gui.add(settings, "timeOfDay", 0, 24, 0.1).name("Time");
-  gui.add({ calculateSunlight }, "calculateSunlight");
   gui.add(settings, "dayAnimation");
+
   const display = gui.addFolder("display");
   display.add(settings.display, "diffuseLight").name("Diffuse light");
   display.open();
+
+  const year = gui.addFolder("Calculate");
+  // gui.add({ calculateSunlight }, "calculateSunlight");
+
+  year
+    .add(calculateYearSettings, "stepSize", 15, 60 * 12, 1)
+    .name("Step size (min)");
+  year.add(calculateYearSettings, "calculateYear").name("Calculate year");
+  year.open();
 }
 
 const clock = new Clock();
@@ -92,7 +129,7 @@ async function render() {
     gui.updateDisplay();
   }
 
-  const seconds = (settings.day * 24 + (settings.timeOfDay - 12)) * 60 * 60;
+  const seconds = (settings.day * 24 + settings.timeOfDay) * 60 * 60;
 
   const renderSettings = {
     ...settings,
