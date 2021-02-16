@@ -254,6 +254,7 @@ export default class Photosynthesis {
     this.renderer.setRenderTarget(this.summaryTarget);
     const clearColor = this.renderer.getClearColor(new Color());
     const clearAlpha = this.renderer.getClearAlpha();
+    this.renderer.setClearColor(black);
     this.renderer.clear();
     this.renderer.setClearColor(clearColor, clearAlpha);
     lights.forEach((light) => {
