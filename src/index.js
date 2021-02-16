@@ -100,7 +100,7 @@ async function render() {
     camera: camera.matrix.toArray(),
   };
 
-/*  await worker.onReply(
+  await worker.onReply(
     worker.postMessage({
       type: "render",
       ...renderSettings,
@@ -108,7 +108,7 @@ async function render() {
   );
 
   stats.end();
-  requestAnimationFrame(render);*/
+  requestAnimationFrame(render);
 }
 
 const messages = {

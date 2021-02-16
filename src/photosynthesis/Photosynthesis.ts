@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  Camera,
   Color,
   DoubleSide,
   InstancedMesh,
@@ -9,6 +10,7 @@ import {
   MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
+  Points,
   RawShaderMaterial,
   Renderer,
   Scene,
@@ -22,10 +24,9 @@ import UVLight from "./UVLight";
 import { isPhotosynthesisMesh } from "./PhotosynthesisMesh";
 
 const black = new Color("black");
-const blockTimesteps = 64;
 const blockWidth = 256;
 const blockHeight = 256;
-const idPerTexture = 256;
+const summaryWidth = 256;
 
 const summaryMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
@@ -33,113 +34,61 @@ const summaryMaterial = new RawShaderMaterial({
   blendEquation: THREE.AddEquation,
   blendDst: THREE.OneFactor,
   blendSrc: THREE.OneFactor,
+  depthWrite: false,
+  depthTest: false,
   uniforms: {
-    data: { value: 0 },
-    history: { value: 0 },
-    canvasHeight: { value: 1 },
-    timestep: { value: 1 },
-  },
-  vertexShader: `
-precision highp float;
-
-uniform float canvasHeight;
-
-attribute vec3 position;
-attribute float id;
-
-varying vec2 vPosition;
-
-void main()	{
-  vec2 p = vec2(position.x, position.y / canvasHeight);
-  vPosition = p;
-  gl_Position = vec4( 2.0*p - 1.0, 0, 1.0 );
-}
-`,
-  fragmentShader: `
-precision highp float;
-
-uniform sampler2D data;
-uniform sampler2D history;
-uniform float canvasHeight;
-uniform float timestep;
-
-varying vec2 vPosition;
-
-void main()	{
-  float pTimestep = vPosition.x * ${blockTimesteps.toFixed(1)};
-  if(abs(pTimestep - timestep) > 0.5) {
-    gl_FragColor.rg = texture2D(history, vPosition).rg;
-  } else {
-    float total = 0.0;
-    float y = vPosition.y;
-    for(float x = 0.5; x < ${blockWidth.toFixed(1)}; ++x) {
-      vec2 p = vec2(x/${blockWidth.toFixed(1)}, y);
-      total += texture2D(data, p).r;
-    }
-    gl_FragColor.r = total;
-  }
-}
-`,
-})
-
-const combineMaterial = new RawShaderMaterial({
-  side: THREE.DoubleSide,
-  uniforms: {
-    totals: { value: 0 },
-    data: { value: 0 },
-    offset: { value: [0, 0] },
-    size: { value: [0, 0] },
-    fromZero: { value: true },
+    dataOffset: { value: [0, 0] },
+    dataSize: { value: [0, 0] },
     canvasSize: { value: [0, 0] },
+    data: { value: 0 },
     pixelArea: { value: 1 },
   },
   vertexShader: `
 precision highp float;
 
+uniform vec2 dataOffset;
+uniform vec2 dataSize;
+
 uniform vec2 canvasSize;
 
-attribute vec2 position;
-attribute float id;
+uniform float pixelArea;
+uniform sampler2D data;
 
-varying vec2 vPosition;
-varying float vID;
+attribute vec2 position;
+
+varying float value;
+
+float round(float f) {
+  return floor(f + 0.5);
+}
+
+float getID(vec2 rg) {
+  return round(63.0 * rg.r) + round(63.0 * rg.g) * 64.0;
+}
 
 void main()	{
-  vPosition = position;
-  vID = id;
-  gl_Position = vec4( 2.0*position.xy/canvasSize - 1.0, 0, 1.0 );
+  vec2 p = (dataOffset + position)/dataSize;
+  vec3 point = texture2D(data, p).rgb;
+  float id = getID(point.rg);
+
+  float y = floor(id / ${summaryWidth.toFixed(1)});
+  float x = id - y * ${summaryWidth.toFixed(1)};
+  if(p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || id == 0.0) {
+    x = 0.0;
+    y = 0.0;
+  }
+  
+  value = point.b * pixelArea;
+  gl_Position = vec4((vec2(x, y) + 0.5)/canvasSize * 2.0 - 1.0, 0.0, 1.0);
 }
 `,
   fragmentShader: `
 precision highp float;
 
-uniform sampler2D totals;
-uniform sampler2D data;
-uniform vec2 canvasSize;
-uniform vec2 offset;
-uniform vec2 size;
-uniform bool fromZero;
-uniform float pixelArea;
-
-varying vec2 vPosition;
-varying float vID;
+varying float value;
 
 void main()	{
-  float x = vPosition.x;
-  float total = 0.0;
-  for(float y = 0.5; y < ${blockHeight.toFixed(1)}; ++y) {
-    vec2 p = (offset + vec2(x, y))/size;
-    if(p.x <= 1.0 && p.y <= 1.0) {
-      vec4 pixel = texture2D(data, p);
-      float pID = pixel.r * 63.0 + floor(0.5 + pixel.g * 63.0) * 64.0;
-      if(abs(vID - pID) < 0.5)
-        total +=  pixel.b;
-    }
-  }
-  total *= pixelArea;
-  if(!fromZero)
-    total += texture2D(totals, vPosition.xy/canvasSize).r;
-  gl_FragColor.r = total;
+  gl_FragColor = vec4(value, 0.0, 0.0, 1.0);
 }
 `,
 });
@@ -154,89 +103,37 @@ function newDataRenderTarget(width: number, height: number) {
   return target;
 }
 
-class SummaryBlock {
-  targets: [WebGLRenderTarget, WebGLRenderTarget];
-  summaryTargets: [WebGLRenderTarget, WebGLRenderTarget];
-  photosynthesisIDs: number[];
-  geometry: BufferGeometry;
-  size: number;
-  camera: OrthographicCamera;
-
-  constructor(renderer: WebGLRenderer, size: number) {
-    this.size = size;
-    this.camera = new OrthographicCamera(0, blockWidth, 0, size, -1, 1);
-
-    this.targets = [0, 1].map(() => newDataRenderTarget(blockWidth, size)) as [
-      WebGLRenderTarget,
-      WebGLRenderTarget
-    ];
-    this.summaryTargets = [0, 1].map(() =>
-      newDataRenderTarget(blockTimesteps, size)
-    ) as [WebGLRenderTarget, WebGLRenderTarget];
-
-    const vertices = new BufferAttribute(new Float32Array(size * 6 * 2), 2);
-    const w = blockWidth;
-    for (let i = 0; i < size; ++i) {
-      vertices.set([0, i, w, i, w, i + 1, 0, i, w, i + 1, 0, i + 1], 6 * 2 * i);
-    }
-
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", vertices);
-    geometry.setAttribute(
-      "id",
-      new BufferAttribute(new Float32Array(size * 6), 1)
-    );
-
-    this.geometry = geometry;
-  }
-
-  setIDs(ids: number[]) {
-    if (ids.length != this.size)
-      return console.error("SummaryBlock should not change in size.");
-    if (this.photosynthesisIDs !== undefined) {
-      let equals = true;
-      ids.forEach((id, i) => {
-        equals &&= id == this.photosynthesisIDs[i];
-      });
-      if (equals) return;
-    }
-
-    this.photosynthesisIDs = ids;
-    const idBuffer = this.geometry.getAttribute("id") as BufferAttribute;
-    ids.forEach((id, i) => {
-      idBuffer.set([id, id, id, id, id, id], 6 * i);
-    });
-  }
-
-  dispose() {
-    this.geometry.dispose();
-    this.targets.forEach((t) => t.dispose());
-    this.summaryTargets.forEach((t) => t.dispose());
-  }
-}
-
 export default class Photosynthesis {
-  scene: Scene;
-  plane: Mesh;
-  photosynthesisIDs: number[] = [];
-  idSize: number = 0;
   renderer: WebGLRenderer;
-  fromZero = true;
-  timestepIndex = 0;
-  blocks: SummaryBlock[] = [];
-  private summaryBuffer: Float32Array = new Float32Array(
-    blockTimesteps * idPerTexture
-  );
-  private internalTimesteps: number[] = [];
-  private timesteps: [number, Map<number, number>][] = [];
+  private __size: number = 0;
+  private __nextID = 1;
+
+  camera = new Camera();
+  scene = new Scene();
+  points = new Points(new BufferGeometry(), summaryMaterial.clone());
+  summaryTarget: WebGLRenderTarget;
+  private summaryBuffer: Float32Array;
   __colors = new Map<number, Color>();
 
   constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
-    this.scene = new Scene();
-    this.plane = new Mesh(new BufferGeometry(), combineMaterial);
-    this.plane.frustumCulled = false;
-    this.scene.add(this.plane);
+
+    this.points.frustumCulled = false;
+
+    const positions = new Float32Array(2 * blockWidth * blockHeight);
+    let k = 0;
+    for (let x = 0; x < blockWidth; ++x)
+      for (let y = 0; y < blockHeight; ++y) {
+        positions[k++] = x + 0.5;
+        positions[k++] = y + 0.5;
+      }
+
+    this.points.geometry.setAttribute(
+      "position",
+      new BufferAttribute(positions, 2)
+    );
+
+    this.scene.add(this.points);
   }
 
   getColor(photosynthesisID?: number) {
@@ -283,46 +180,24 @@ export default class Photosynthesis {
   }
 
   private prepareIDsBlocks() {
-    if (this.photosynthesisIDs.length == this.idSize) return;
-    this.idSize = this.photosynthesisIDs.length;
+    if (this.__size == this.__nextID) return;
+    this.__size = this.__nextID;
 
-    this.flush();
+    const rows = Math.ceil(this.__size / summaryWidth);
 
-    const ids = this.photosynthesisIDs;
-    for (
-      let i = 0, blockIndex = 0;
-      i < ids.length;
-      i += idPerTexture, ++blockIndex
-    ) {
-      const length = Math.min(ids.length - i, idPerTexture);
+    if (this.summaryTarget !== undefined) this.summaryTarget.dispose();
+    this.summaryTarget = newDataRenderTarget(summaryWidth, rows);
 
-      let block: SummaryBlock = this.blocks[blockIndex];
-
-      if (block !== undefined && block.size != length) {
-        block.dispose();
-        block = undefined;
-      }
-
-      if (block == undefined) {
-        block = new SummaryBlock(this.renderer, length);
-        this.blocks[blockIndex] = block;
-      }
-
-      block.setIDs(ids.slice(i, i + length));
-    }
+    this.summaryBuffer = new Float32Array(summaryWidth * rows);
   }
 
   nextID(): number {
-    const id = this.photosynthesisIDs.length + 1;
-    this.photosynthesisIDs.push(id);
-    return id;
+    return this.__nextID++;
   }
 
   clear() {
-    this.idSize = 0;
-    this.photosynthesisIDs = [];
-    this.blocks.forEach((block) => block.dispose());
-    this.blocks = [];
+    this.__nextID = 1;
+    this.__size = 0;
   }
 
   addLight(
@@ -331,85 +206,31 @@ export default class Photosynthesis {
     height: number,
     pixelArea: number = 1
   ) {
-    this.plane.material = combineMaterial;
-    const uniforms = combineMaterial.uniforms;
+    const uniforms = (this.points.material as RawShaderMaterial).uniforms;
     uniforms.data.value = texture;
-    uniforms.size.value = [width, height];
+    uniforms.dataSize.value = [width, height];
     uniforms.pixelArea.value = pixelArea;
+    uniforms.canvasSize.value = [
+      this.summaryTarget.width,
+      this.summaryTarget.height,
+    ];
+
+    const autoClear = this.renderer.autoClear;
+    this.renderer.autoClear = false;
+
+    this.renderer.setRenderTarget(this.summaryTarget);
 
     for (let x = 0; x < width; x += blockWidth)
       for (let y = 0; y < height; y += blockHeight) {
-        uniforms.offset.value = [x, y];
-        uniforms.fromZero.value = this.fromZero;
-        this.fromZero = false;
-        this.blocks.forEach((block) => {
-          block.targets.reverse();
-          uniforms.canvasSize.value = [blockWidth, block.size];
-          uniforms.totals.value = block.targets[1].texture;
-          this.plane.geometry = block.geometry;
-          this.renderer.setRenderTarget(block.targets[0]);
-          this.renderer.render(this.scene, block.camera);
-        });
+        uniforms.dataOffset.value = [x, y];
+
+        this.renderer.render(this.scene, this.camera);
       }
+
+    this.renderer.autoClear = autoClear;
   }
 
-  private endTimestep(time: number) {
-    this.plane.material = summaryMaterial;
-    const uniforms = summaryMaterial.uniforms;
-    uniforms.timestep.value = this.internalTimesteps.length;
-
-    this.blocks.forEach((block) => {
-      block.summaryTargets.reverse();
-      uniforms.data.value = block.targets[0].texture;
-      uniforms.canvasHeight.value = block.size;
-      uniforms.history.value = block.summaryTargets[1].texture;
-      this.renderer.setRenderTarget(block.summaryTargets[0]);
-      this.renderer.render(this.scene, block.camera);
-
-      this.fromZero = true;
-    });
-    this.internalTimesteps.push(time);
-
-    if (this.internalTimesteps.length >= blockTimesteps) {
-      this.flush();
-    }
-  }
-
-  flush() {
-    if (this.internalTimesteps.length == 0) return;
-
-    const data = this.internalTimesteps.map((time): [
-      number,
-      Map<number, number>
-    ] => [time, new Map<number, number>()]);
-
-    this.blocks.forEach((block) => {
-      this.renderer.readRenderTargetPixels(
-        block.summaryTargets[0],
-        0,
-        0,
-        blockTimesteps,
-        block.size,
-        this.summaryBuffer
-      );
-
-      data.forEach(([time, map], i) => {
-        block.photosynthesisIDs.forEach((id, j) => {
-          const index = blockTimesteps * j + i;
-          map.set(id, this.summaryBuffer[index]);
-        });
-      });
-    });
-    this.timesteps.push(...data);
-    this.internalTimesteps = [];
-  }
-
-  getTimesteps(): [number, Map<number, number>][] {
-    this.flush();
-    return this.timesteps;
-  }
-
-  calculate(time: number, scene: Scene, lights: UVLight[]) {
+  calculate(scene: Scene, lights: UVLight[]): number[] {
     const updateMaterial: any[] = [];
     scene.traverseVisible((obj) => {
       if (isPhotosynthesisMesh(obj)) {
@@ -430,9 +251,23 @@ export default class Photosynthesis {
     const background = scene.background;
     scene.background = black;
 
+    this.renderer.setRenderTarget(this.summaryTarget);
+    const clearColor = this.renderer.getClearColor(new Color());
+    const clearAlpha = this.renderer.getClearAlpha();
+    this.renderer.clear();
+    this.renderer.setClearColor(clearColor, clearAlpha);
     lights.forEach((light) => {
       light.render(this.renderer, scene, this);
     });
+
+    this.renderer.readRenderTargetPixels(
+      this.summaryTarget,
+      0,
+      0,
+      this.summaryTarget.width,
+      this.summaryTarget.height,
+      this.summaryBuffer
+    );
 
     scene.background = background;
 
@@ -441,14 +276,8 @@ export default class Photosynthesis {
       else obj.material = obj.photosynthesisOldMaterial;
     });
 
-    this.endTimestep(time);
     this.renderer.setRenderTarget(null);
-  }
 
-  clearTimesteps() {
-    this.flush();
-    const timesteps = this.timesteps;
-    this.timesteps = [];
-    return timesteps;
+    return [...this.summaryBuffer.slice(0, this.__size)];
   }
 }

@@ -111,8 +111,8 @@ function progressDone() {
       this.photosynthesis = new Photosynthesis(this.renderer);
 
       const viewSize = 30;
-      const renderSize = 1024;
-      const sensorGrid = new SensorGrid(this.photosynthesis, 128, 128, 10, 10);
+      const renderSize = 2048;
+      const sensorGrid = new SensorGrid(this.photosynthesis, 64, 64, 16, 16);
       scene.add(sensorGrid);
 
       const camera = new PerspectiveCamera(45, 1, 1, 10000);
@@ -215,9 +215,8 @@ function progressDone() {
         const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
         camera.lookAt(0, 0, 1);
         return () => {
-          if (this.photosynthesis.blocks.length) {
-            planeMaterial.map = this.photosynthesis.blocks[0].summaryTargets[0].texture;
-            // planeMaterial.map = diffuseLight.target.texture;
+          if (this.photosynthesis.summaryTarget) {
+            planeMaterial.map = this.photosynthesis.summaryTarget.texture;
             this.renderer.render(scene, camera);
           }
         };
@@ -238,19 +237,17 @@ function progressDone() {
       timesteps: number[],
       settings: RenderSettings = {}
     ) {
-      let index = 0;
+      const results = [];
       progress("Calculating sunlight", 0);
       for await (const time of slowLoop(timesteps)) {
         this.setSettings(settings);
         this.sunIndicator.visible = false;
         this.diffuseIndicator.visible = false;
         this.sun.setSeconds(time);
-        await sleep(10);
-        this.photosynthesis.calculate(time, this.scene, [this.sunlight]);
-        progress("Calculating sunlight", index / timesteps.length);
-        ++index;
+        const data = this.photosynthesis.calculate(this.scene, [this.sunlight]);
+        results.push([time, data]);
+        progress("Calculating sunlight", results.length / timesteps.length);
       }
-      const results = this.photosynthesis.clearTimesteps();
       progressDone();
       return results;
     }
@@ -274,7 +271,7 @@ function progressDone() {
         const size = 300;
         this.renderer.setScissor(0, 0, size, size);
         this.renderer.setViewport(0, 0, size, size);
-        //this.drawViewOfSun();
+        this.drawViewOfSun();
       }
     }
   }
