@@ -239,7 +239,7 @@ function progressDone() {
     ) {
       const results = [];
       progress("Calculating sunlight", 0);
-      for await (const time of slowLoop(timesteps)) {
+      for (const time of timesteps) {
         this.setSettings(settings);
         this.sunIndicator.visible = false;
         this.diffuseIndicator.visible = false;

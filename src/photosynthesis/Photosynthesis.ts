@@ -24,8 +24,8 @@ import UVLight from "./UVLight";
 import { isPhotosynthesisMesh } from "./PhotosynthesisMesh";
 
 const black = new Color("black");
-const blockWidth = 256;
-const blockHeight = 256;
+const blockWidth = 512;
+const blockHeight = 512;
 const summaryWidth = 256;
 
 const summaryMaterial = new RawShaderMaterial({
