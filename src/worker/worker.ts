@@ -23,6 +23,17 @@ import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import MessageHandler from "./MessageHandler";
 
+function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function* slowLoop<T>(array: Iterable<T>): AsyncGenerator<T> {
+  for (const element of array) {
+    await sleep(0);
+    yield element;
+  }
+}
+
 const messageHandler = new MessageHandler((self as any) as Worker);
 
 function getSetting(object: any, ...args: any[]) {
@@ -97,9 +108,11 @@ function progressDone() {
       const scene = new THREE.Scene();
       this.scene = scene;
 
+      this.photosynthesis = new Photosynthesis(this.renderer);
+
       const viewSize = 30;
       const renderSize = 1024;
-      const sensorGrid = new SensorGrid(64, 40, 16, 10);
+      const sensorGrid = new SensorGrid(this.photosynthesis, 128, 128, 10, 10);
       scene.add(sensorGrid);
 
       const camera = new PerspectiveCamera(45, 1, 1, 10000);
@@ -172,8 +185,6 @@ function progressDone() {
 
       scene.add(sun);
 
-      this.photosynthesis = new Photosynthesis(this.renderer);
-
       const lidarTree = new LidarTree(
         addPhotosynthesisMaterial(
           new MeshPhongMaterial({
@@ -223,17 +234,22 @@ function progressDone() {
       }
     }
 
-    calculateSunlight(timesteps: number[], settings: RenderSettings = {}) {
-      this.setSettings(settings);
-
-      this.sunIndicator.visible = false;
-      this.diffuseIndicator.visible = false;
-
-      timesteps.forEach((time, index) => {
+    async calculateSunlight(
+      timesteps: number[],
+      settings: RenderSettings = {}
+    ) {
+      let index = 0;
+      progress("Calculating sunlight", 0);
+      for await (const time of slowLoop(timesteps)) {
+        this.setSettings(settings);
+        this.sunIndicator.visible = false;
+        this.diffuseIndicator.visible = false;
         this.sun.setSeconds(time);
+        await sleep(10);
         this.photosynthesis.calculate(time, this.scene, [this.sunlight]);
         progress("Calculating sunlight", index / timesteps.length);
-      });
+        ++index;
+      }
       const results = this.photosynthesis.clearTimesteps();
       progressDone();
       return results;
@@ -258,7 +274,7 @@ function progressDone() {
         const size = 300;
         this.renderer.setScissor(0, 0, size, size);
         this.renderer.setViewport(0, 0, size, size);
-        this.drawViewOfSun();
+        //this.drawViewOfSun();
       }
     }
   }
@@ -286,8 +302,8 @@ function progressDone() {
         type: "renderDone",
       });
     },
-    sunlight(message: any) {
-      const data = requireWorker().calculateSunlight(
+    async sunlight(message: any) {
+      const data = await requireWorker().calculateSunlight(
         message.timesteps,
         message
       );

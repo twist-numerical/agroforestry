@@ -19,6 +19,7 @@ import {
 } from "three";
 import * as THREE from "three";
 import UVLight from "./UVLight";
+import { isPhotosynthesisMesh } from "./PhotosynthesisMesh";
 
 const black = new Color("black");
 const blockTimesteps = 64;
@@ -28,6 +29,10 @@ const idPerTexture = 256;
 
 const summaryMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
+  blending: THREE.CustomBlending,
+  blendEquation: THREE.AddEquation,
+  blendDst: THREE.OneFactor,
+  blendSrc: THREE.OneFactor,
   uniforms: {
     data: { value: 0 },
     history: { value: 0 },
@@ -75,7 +80,7 @@ void main()	{
   }
 }
 `,
-});
+})
 
 const combineMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
@@ -188,6 +193,14 @@ class SummaryBlock {
   setIDs(ids: number[]) {
     if (ids.length != this.size)
       return console.error("SummaryBlock should not change in size.");
+    if (this.photosynthesisIDs !== undefined) {
+      let equals = true;
+      ids.forEach((id, i) => {
+        equals &&= id == this.photosynthesisIDs[i];
+      });
+      if (equals) return;
+    }
+
     this.photosynthesisIDs = ids;
     const idBuffer = this.geometry.getAttribute("id") as BufferAttribute;
     ids.forEach((id, i) => {
@@ -205,7 +218,8 @@ class SummaryBlock {
 export default class Photosynthesis {
   scene: Scene;
   plane: Mesh;
-  photosynthesisIDs: number[];
+  photosynthesisIDs: number[] = [];
+  idSize: number = 0;
   renderer: WebGLRenderer;
   fromZero = true;
   timestepIndex = 0;
@@ -225,7 +239,7 @@ export default class Photosynthesis {
     this.scene.add(this.plane);
   }
 
-  private getColor(photosynthesisID?: number) {
+  getColor(photosynthesisID?: number) {
     if (!photosynthesisID) return black;
     let color = this.__colors.get(photosynthesisID);
     if (color === undefined) {
@@ -268,42 +282,47 @@ export default class Photosynthesis {
     return photosynthesisMaterial;
   }
 
-  setIDs(ids: number[]) {
-    if (this.photosynthesisIDs !== undefined) {
-      let equals = true;
-      ids.forEach((id, i) => {
-        equals &&= id == this.photosynthesisIDs[i];
-      });
-      if (equals) return;
-    }
-    this.photosynthesisIDs = ids;
+  private prepareIDsBlocks() {
+    if (this.photosynthesisIDs.length == this.idSize) return;
+    this.idSize = this.photosynthesisIDs.length;
 
     this.flush();
 
-    const blockCache = new Set<SummaryBlock>(this.blocks);
-    this.blocks = [];
-
-    for (let i = 0; i < ids.length; i += idPerTexture) {
+    const ids = this.photosynthesisIDs;
+    for (
+      let i = 0, blockIndex = 0;
+      i < ids.length;
+      i += idPerTexture, ++blockIndex
+    ) {
       const length = Math.min(ids.length - i, idPerTexture);
 
-      let block: SummaryBlock = undefined;
-      for (const cacheBlock of blockCache)
-        if (cacheBlock.size == length) {
-          block = cacheBlock;
-          break;
-        }
+      let block: SummaryBlock = this.blocks[blockIndex];
+
+      if (block !== undefined && block.size != length) {
+        block.dispose();
+        block = undefined;
+      }
 
       if (block == undefined) {
         block = new SummaryBlock(this.renderer, length);
-      } else {
-        blockCache.delete(block);
+        this.blocks[blockIndex] = block;
       }
 
       block.setIDs(ids.slice(i, i + length));
-      this.blocks.push(block);
     }
+  }
 
-    for (const block of blockCache) block.dispose();
+  nextID(): number {
+    const id = this.photosynthesisIDs.length + 1;
+    this.photosynthesisIDs.push(id);
+    return id;
+  }
+
+  clear() {
+    this.idSize = 0;
+    this.photosynthesisIDs = [];
+    this.blocks.forEach((block) => block.dispose());
+    this.blocks = [];
   }
 
   addLight(
@@ -392,20 +411,21 @@ export default class Photosynthesis {
 
   calculate(time: number, scene: Scene, lights: UVLight[]) {
     const updateMaterial: any[] = [];
-    const ids = new Set<number>();
     scene.traverseVisible((obj) => {
-      if (obj instanceof Mesh && obj.material) {
+      if (isPhotosynthesisMesh(obj)) {
+        if (obj.photosynthesis != this) obj.blackPhotosynthesis();
+        else obj.prePhotosynthesis();
+        updateMaterial.push(obj);
+      } else if (obj instanceof Mesh && obj.material) {
         (obj as any).photosynthesisOldMaterial = obj.material;
         obj.material = this.getPhotosynthesisMaterial(
           obj.material as Material,
           (obj as any).photosynthesisID
         );
         updateMaterial.push(obj);
-        if ((obj as any).photosynthesisID !== undefined)
-          ids.add((obj as any).photosynthesisID);
       }
     });
-    this.setIDs(Array.from(ids));
+    this.prepareIDsBlocks();
 
     const background = scene.background;
     scene.background = black;
@@ -417,7 +437,8 @@ export default class Photosynthesis {
     scene.background = background;
 
     updateMaterial.forEach((obj) => {
-      obj.material = obj.photosynthesisOldMaterial;
+      if (isPhotosynthesisMesh(obj)) obj.postPhotosynthesis();
+      else obj.material = obj.photosynthesisOldMaterial;
     });
 
     this.endTimestep(time);
