@@ -48,16 +48,14 @@ const messages = {
       trees: [
         {
           position: [-5, 0],
-          height: 12.5,
-          leafLength: 0.1,
+          leafLength: 0.2,
           leafWidth: 0.2,
-          leavesPerTwig: 10,
+          leavesPerTwig: 5,
         },
         {
           position: [0, 1],
-          height: 12.5,
-          leafLength: 0.1,
-          leafWidth: 0.2,
+          leafLength: 0.05,
+          leafWidth: 0.4,
           leavesPerTwig: 10,
         },
       ],

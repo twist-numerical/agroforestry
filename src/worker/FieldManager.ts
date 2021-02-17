@@ -16,6 +16,7 @@ import {
 } from "three";
 import { range } from "../functional";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
+import LidarTree from "../photosynthesis/LidarTree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
@@ -43,10 +44,11 @@ export type FieldParameters = {
   };
   trees: {
     position: [number, number];
-    height: number;
+    leaves?: boolean;
     leafLength?: number;
     leafWidth?: number;
     leavesPerTwig?: number;
+    maxTwigRadius?: number;
   }[];
   sensors: {
     size: [number, number];
@@ -84,6 +86,8 @@ export default class FieldManager {
   progress: (message: string, value: number) => void;
   progressDone: () => void;
   drawViewOfSun: () => void;
+  trees: LidarTree[] = [];
+  treeGroup = new Group();
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -137,7 +141,7 @@ export default class FieldManager {
   setSettings({ latitude, seconds, leafGrowth, camera }: RenderSettings) {
     if (latitude !== undefined) this.sun.setLatitude(latitude);
     if (seconds !== undefined) this.sun.setSeconds(seconds);
-    // if (leafGrowth !== undefined) this.leaves.setGrowth(leafGrowth);
+    if (leafGrowth !== undefined) this.setGrowth(leafGrowth);
     if (camera !== undefined) {
       this.camera.matrix.fromArray(camera);
       this.camera.matrixWorldNeedsUpdate = true;
@@ -184,9 +188,32 @@ export default class FieldManager {
     this.diffuseLight.setViewSize(1.5 * parameters.field.size);
     this.diffuseLight.setRenderSize(parameters.sensors.renderSize || 1024);
 
-    for (const tree of parameters.trees) {
-      // TODO
+    this.treeGroup.clear();
+    while (this.trees.length) this.trees.pop().dispose();
+
+    const treeMaterial = new MeshBasicMaterial({
+      color: new Color("brown"),
+    });
+    for (const treeParameters of parameters.trees) {
+      const tree = new LidarTree(treeMaterial, {
+        leaves:
+          treeParameters.leavesPerTwig !== undefined ||
+          treeParameters.leafLength !== undefined ||
+          treeParameters.leafWidth !== undefined,
+        ...treeParameters,
+      });
+      const [x, y] = treeParameters.position;
+      tree.position.set(x, 0, y);
+      tree.rotation.set(0, Math.PI * 2 * Math.random(), 0);
+      this.trees.push(tree);
+      this.field.add(tree);
     }
+  }
+
+  setGrowth(growth: number) {
+    this.trees.forEach((tree) => {
+      tree.setGrowth(growth);
+    });
   }
 
   calculateSunlight(settings: RenderSettings = {}) {
