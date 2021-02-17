@@ -21,25 +21,6 @@ function progressDone() {
   });
 }
 
-/*
-this.drawViewOfSun = (() => {
-  const scene = new Scene();
-  const planeMaterial = new MeshBasicMaterial();
-  planeMaterial.map = sunlight.target.texture;
-  const plane = new Mesh(new PlaneGeometry(2, 2), planeMaterial);
-  plane.scale.set(-1, 1, 1);
-  scene.add(plane);
-  const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
-  camera.lookAt(0, 0, 1);
-  return () => {
-    if (this.photosynthesis.summaryTarget) {
-      planeMaterial.map = this.photosynthesis.summaryTarget.texture;
-      this.renderer.render(scene, camera);
-    }
-  };
-})();
-*/
-
 let manager: FieldManager | undefined = undefined;
 function requireManager(): FieldManager {
   if (manager === undefined)
@@ -60,8 +41,8 @@ const messages = {
       field: {
         size: 32.0,
         latitude: 50.5,
-        rotation: d2r(180.0),
-        inclination: d2r(2),
+        rotation: d2r(0.0),
+        inclination: d2r(0),
         inclinationRotation: d2r(45),
       },
       trees: [
@@ -81,8 +62,9 @@ const messages = {
         },
       ],
       sensors: {
-        size: [4, 4],
-        count: [20, 20],
+        size: [32, 32],
+        count: [64, 64],
+        renderSize: 1024,
       },
     });
   },
@@ -106,7 +88,7 @@ const messages = {
     });
   },
   sunlight(message: any) {
-    const data = requireManager().calculateSunlight(message.timesteps, message);
+    const data = requireManager().calculateSunlight(message);
 
     messageHandler.reply(message, {
       type: "sunlightDone",

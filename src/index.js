@@ -50,18 +50,13 @@ const settings = {
 };
 
 async function calculateSunlight() {
-  const timesteps = [];
-  const seconds = settings.day * 24 * 60 * 60;
-
-  for (let i = 12 * 60 * 60; i > -12 * 60 * 60; i -= (24 / 64) * 60 * 60) {
-    timesteps.push(seconds + i);
-  }
+  const seconds = (settings.day * 24 + settings.timeOfDay) * 60 * 60;
 
   const messageEvent = await worker.onReply(
     worker.postMessage({
       type: "sunlight",
-      timesteps: timesteps,
       ...settings,
+      seconds: seconds,
     })
   );
 
@@ -107,14 +102,14 @@ const gui = new dat.GUI();
   display.add(settings.display, "diffuseLight").name("Diffuse light");
   display.open();
 
-  const year = gui.addFolder("Calculate");
-  // gui.add({ calculateSunlight }, "calculateSunlight");
+  const calculate = gui.addFolder("Calculate");
+  calculate.add({ calculateSunlight }, "calculateSunlight");
 
-  year
+  calculate
     .add(calculateYearSettings, "stepSize", 15, 60 * 12, 1)
     .name("Step size (min)");
-  year.add(calculateYearSettings, "calculateYear").name("Calculate year");
-  year.open();
+    calculate.add(calculateYearSettings, "calculateYear").name("Calculate year");
+    calculate.open();
 }
 
 const clock = new Clock();

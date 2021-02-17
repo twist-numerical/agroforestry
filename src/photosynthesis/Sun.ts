@@ -53,6 +53,7 @@ export default class Sun extends Object3D {
 
   isNight(): boolean {
     return this.matrix.elements[1] > 0;
+    // TO DO: add horizon plane
   }
 
   updateMatrix() {

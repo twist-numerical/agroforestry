@@ -14,47 +14,33 @@ import Photosynthesis from "./Photosynthesis";
 export default class Sunlight extends UVLight {
   light = new THREE.DirectionalLight(0xaaaaaa);
   camera: OrthographicCamera;
-  target: WebGLRenderTarget;
-  pixelArea: number;
+  viewSize: number;
 
   constructor(viewSize: number, renderSize: number) {
-    super();
+    super(renderSize);
     this.add(this.light);
 
-    this.pixelArea = Math.pow(viewSize / renderSize, 2);
-    this.camera = new OrthographicCamera(
-      -viewSize / 2,
-      viewSize / 2,
-      -viewSize / 2,
-      viewSize / 2,
-      -10 * viewSize,
-      10 * viewSize
-    );
+    this.camera = new OrthographicCamera(-1, 1, -1, 1);
+    this.setViewSize(viewSize);
+    this.setRenderSize(renderSize);
     this.camera.lookAt(0, 0, 1);
     this.add(this.camera);
-
-    this.target = new WebGLRenderTarget(renderSize, renderSize);
-  }
-
-  setRenderSize(renderSize: number) {
-    this.target.dispose();
-    this.target = new WebGLRenderTarget(renderSize, renderSize);
   }
 
   setViewSize(viewSize: number) {
+    this.viewSize = viewSize;
     this.camera.left = -viewSize / 2;
     this.camera.right = viewSize / 2;
     this.camera.bottom = -viewSize / 2;
     this.camera.top = viewSize / 2;
     this.camera.near = -10 * viewSize;
     this.camera.far = 10 * viewSize;
+    this.camera.updateProjectionMatrix();
   }
 
-  getMaterial(photosynthesisID: number, color: Color): Material {
-    return new MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      color: color,
-    });
+  get pixelArea(): number {
+    const side = this.viewSize / this.renderSize;
+    return side * side;
   }
 
   render(

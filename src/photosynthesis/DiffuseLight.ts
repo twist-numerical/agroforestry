@@ -22,41 +22,34 @@ export default class DiffuseLight extends UVLight {
   camera: OrthographicCamera;
   target: WebGLRenderTarget;
   transforms: Matrix4[] = [];
-  pixelArea: number;
+  viewSize: number;
 
   constructor(count: number, viewSize: number, renderSize: number) {
-    super();
+    super(renderSize);
     this.add(this.light);
 
-    this.camera = new OrthographicCamera(
-      -viewSize / 2,
-      viewSize / 2,
-      -viewSize / 2,
-      viewSize / 2,
-      -10 * viewSize,
-      10 * viewSize
-    );
-    this.pixelArea = Math.pow(viewSize / renderSize, 2);
+    this.camera = new OrthographicCamera(-1, 1, -1, 1);
     this.camera.matrixAutoUpdate = false;
+    this.setViewSize(viewSize);
     this.add(this.camera);
-
-    this.target = new WebGLRenderTarget(renderSize, renderSize);
 
     this.setCount(count);
   }
 
   setViewSize(viewSize: number) {
+    this.viewSize = viewSize;
     this.camera.left = -viewSize / 2;
     this.camera.right = viewSize / 2;
     this.camera.bottom = -viewSize / 2;
     this.camera.top = viewSize / 2;
     this.camera.near = -10 * viewSize;
     this.camera.far = 10 * viewSize;
+    this.camera.updateProjectionMatrix();
   }
 
-  setRenderSize(size: number) {
-    this.target.dispose();
-    this.target = new WebGLRenderTarget(size, size);
+  get pixelArea(): number {
+    const side = this.viewSize / this.renderSize;
+    return side * side;
   }
 
   setCount(count: number) {

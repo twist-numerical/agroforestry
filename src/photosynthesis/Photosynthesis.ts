@@ -43,8 +43,9 @@ const summaryMaterial = new RawShaderMaterial({
     data: { value: 0 },
     pixelArea: { value: 1 },
   },
-  vertexShader: `
+  vertexShader: `#version 300 es
 precision highp float;
+precision highp int;
 
 uniform vec2 dataOffset;
 uniform vec2 dataSize;
@@ -54,41 +55,42 @@ uniform vec2 canvasSize;
 uniform float pixelArea;
 uniform sampler2D data;
 
-attribute vec2 position;
+in vec2 position;
 
-varying float value;
+out float value;
 
 float round(float f) {
   return floor(f + 0.5);
 }
 
-float getID(vec2 rg) {
-  return round(63.0 * rg.r) + round(63.0 * rg.g) * 64.0;
+uint getID(vec2 rg) {
+  return uint(round(255.0*rg.r)) + uint(round(rg.g * 255.0)) * 256u;
 }
 
 void main()	{
   vec2 p = (dataOffset + position)/dataSize;
-  vec3 point = texture2D(data, p).rgb;
-  float id = getID(point.rg);
+  vec3 point = texture(data, p).rgb;
+  uint id = getID(point.rg);
 
-  float y = floor(id / ${summaryWidth.toFixed(1)});
-  float x = id - y * ${summaryWidth.toFixed(1)};
+  value = point.b * pixelArea;
+
+  uint y = id / ${summaryWidth}u;
+  uint x = id - y * ${summaryWidth}u;
   if(p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) {
-    x = -10.0;
-    y = -10.0;
+    value = 0.0;
   }
   
-  value = point.b * pixelArea;
   gl_Position = vec4((vec2(x, y) + 0.5)/canvasSize * 2.0 - 1.0, 0.0, 1.0);
 }
 `,
-  fragmentShader: `
+  fragmentShader: `#version 300 es
 precision highp float;
 
-varying float value;
+in float value;
+out vec4 fragColor;
 
 void main()	{
-  gl_FragColor = vec4(value, 0.0, 0.0, 1.0);
+  fragColor = vec4(value, 0.0, 0.0, 1.0);
 }
 `,
 });
@@ -136,12 +138,12 @@ export default class Photosynthesis {
   }
 
   getColor(photosynthesisID?: number) {
-    if (!photosynthesisID) return black;
+    if (photosynthesisID === undefined) return black;
     let color = this.__colors.get(photosynthesisID);
     if (color === undefined) {
       color = new Color(
-        (photosynthesisID & 63) / 63,
-        (photosynthesisID >> 6) / 63,
+        (photosynthesisID & 255) / 255,
+        (photosynthesisID >> 8) / 255,
         1
       );
       this.__colors.set(photosynthesisID, color);
@@ -279,6 +281,6 @@ export default class Photosynthesis {
 
     this.renderer.setRenderTarget(null);
 
-    return [...this.summaryBuffer.slice(0, this.__nextID + 1)];
+    return [...this.summaryBuffer.slice(0, this.__nextID)];
   }
 }

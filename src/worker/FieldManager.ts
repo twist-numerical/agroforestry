@@ -5,6 +5,7 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  OrthographicCamera,
   PerspectiveCamera,
   PlaneGeometry,
   RedFormat,
@@ -82,6 +83,7 @@ export default class FieldManager {
   height: number = 300;
   progress: (message: string, value: number) => void;
   progressDone: () => void;
+  drawViewOfSun: () => void;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -96,11 +98,29 @@ export default class FieldManager {
     this.scene.add(this.field);
     this.scene.add(this.camera);
     this.camera.matrixAutoUpdate = false;
-    this.sunlight.lookAt(new Vector3(1, 0, 0));
-    this.sun.add(this.sunlight);
 
+    this.sunlight.lookAt(new Vector3(1, 0, 0));
     this.sunIndicator.position.set(-10, 0, 0);
+    this.sun.add(this.sunlight);
     this.sun.add(this.sunIndicator);
+    this.scene.add(this.sun);
+
+    this.drawViewOfSun = (() => {
+      const scene = new Scene();
+      const planeMaterial = new MeshBasicMaterial();
+      const plane = new Mesh(new PlaneGeometry(2, 2), planeMaterial);
+      plane.scale.set(-1, 1, 1);
+      scene.add(plane);
+      const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
+      camera.lookAt(0, 0, 1);
+      return () => {
+        planeMaterial.map = this.sunlight.target.texture;
+        //    if (this.photosynthesis.summaryTarget) {
+        //  planeMaterial.map = this.photosynthesis.summaryTarget.texture;
+        this.renderer.render(scene, camera);
+        //  }
+      };
+    })();
   }
 
   resize(width: number, height: number, pixelRatio: number) {
@@ -151,9 +171,9 @@ export default class FieldManager {
     const inclinationRotation = parameters.field.inclinationRotation || 0;
     this.ground.setRotationFromAxisAngle(
       new Vector3(
-        Math.cos(inclinationRotation),
+        Math.sin(inclinationRotation),
         0,
-        Math.sin(inclinationRotation)
+        -Math.cos(inclinationRotation)
       ),
       parameters.field.inclination || 0
     );
@@ -169,22 +189,11 @@ export default class FieldManager {
     }
   }
 
-  calculateSunlight(timesteps: number[], settings: RenderSettings = {}) {
+  calculateSunlight(settings: RenderSettings = {}) {
     this.setSettings(settings);
     this.sunIndicator.visible = false;
     // this.diffuseIndicator.visible = false;
-    const results = [];
-    this.progress("Calculating sunlight", 0);
-    for (const time of timesteps) {
-      this.sun.setSeconds(time);
-      results.push([
-        time,
-        this.photosynthesis.calculate(this.scene, [this.sunlight]),
-      ]);
-      this.progress("Calculating sunlight", results.length / timesteps.length);
-    }
-    this.progressDone();
-    return results;
+    return this.photosynthesis.calculate(this.scene, [this.sunlight]);
   }
 
   calculateYear(stepSize: number, settings: RenderSettings = {}) {
@@ -225,12 +234,12 @@ export default class FieldManager {
     this.renderer.setViewport(0, 0, this.width, this.height);
     this.renderer.render(this.scene, this.camera);
 
-    // this.renderer.setScissorTest(true);
-    /* {
+    {
+      this.renderer.setScissorTest(true);
       const size = 300;
       this.renderer.setScissor(0, 0, size, size);
       this.renderer.setViewport(0, 0, size, size);
       this.drawViewOfSun();
-    } */
+    }
   }
 }
