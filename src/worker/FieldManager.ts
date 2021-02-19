@@ -261,12 +261,12 @@ export default class FieldManager {
     this.renderer.setViewport(0, 0, this.width, this.height);
     this.renderer.render(this.scene, this.camera);
 
-    {
+    /* {
       this.renderer.setScissorTest(true);
       const size = 300;
       this.renderer.setScissor(0, 0, size, size);
       this.renderer.setViewport(0, 0, size, size);
       this.drawViewOfSun();
-    }
+    } */
   }
 }

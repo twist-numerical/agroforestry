@@ -39,7 +39,7 @@ const messages = {
     manager = new FieldManager(canvas, progress, progressDone);
     manager.loadField({
       field: {
-        size: 32.0,
+        size: 30.0,
         latitude: 50.5,
         rotation: d2r(0.0),
         inclination: d2r(0),
@@ -60,7 +60,7 @@ const messages = {
         },
       ],
       sensors: {
-        size: [32, 32],
+        size: [20, 20],
         count: [64, 64],
         renderSize: 1024,
       },
@@ -78,7 +78,6 @@ const messages = {
   },
   year(message: any) {
     const data = requireManager().calculateYear(message.stepSize, message);
-    console.log(data);
 
     messageHandler.reply(message, {
       type: "yearDone",

@@ -11,9 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "ajv": "^7.1.0",
+    "bootstrap": "^4.6.0",
     "dat.gui": "^0.7.7",
     "file-saver": "^2.0.5",
     "jszip": "^3.6.0",
+    "mathjs": "^9.2.0",
     "parcel": "^1.12.4",
     "stats.js": "^0.17.0",
     "three": "^0.125",
@@ -24,6 +26,7 @@
     "last 1 Chrome version"
   ],
   "devDependencies": {
+    "@types/mathjs": "^6.0.11",
     "@vue/component-compiler-utils": "^3.2.0",
     "pug": "^3.0.0",
     "sass": "^1.32.8",

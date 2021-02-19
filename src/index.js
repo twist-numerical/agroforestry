@@ -108,8 +108,8 @@ const gui = new dat.GUI();
   calculate
     .add(calculateYearSettings, "stepSize", 15, 60 * 12, 1)
     .name("Step size (min)");
-    calculate.add(calculateYearSettings, "calculateYear").name("Calculate year");
-    calculate.open();
+  calculate.add(calculateYearSettings, "calculateYear").name("Calculate year");
+  calculate.open();
 }
 
 const clock = new Clock();

@@ -31,6 +31,14 @@ export default {
       type: Number,
       default: 12,
     },
+    leafGrowth: {
+      type: Number,
+      default: 0.5,
+    },
+    latitude: {
+      type: Number,
+      default: 10,
+    },
   },
 
   created() {},
@@ -40,21 +48,17 @@ export default {
     this.canvas = this.$refs.canvas;
 
     this.resizeCallback = () => {
-      const width = this.canvas.clientWidth;
-      const height = this.canvas.clientHeight;
-      const pixelRatio = window.devicePixelRatio;
-
       worker.postMessage({
         type: "resize",
-        width,
-        height,
-        pixelRatio,
+        width: this.canvas.clientWidth,
+        height: this.canvas.clientHeight,
+        pixelRatio: window.devicePixelRatio,
       });
     };
 
     this.camera = new PerspectiveCamera();
     this.controls = new OrbitControls(this.camera, this.canvas);
-    this.camera.position.set(-20, 8, 3);
+    this.camera.position.set(-30, 18, 3);
     this.camera.lookAt(0, 0, 0);
     this.controls.update();
 
@@ -69,30 +73,30 @@ export default {
     this.resizeCallback();
     window.addEventListener("resize", this.resizeCallback);
 
-    this.renderLoop();
-  },
-
-  methods: {
-    async renderLoop() {
+    (async () => {
       while (this.__mounted) {
         this.stats.beginFrame();
         this.controls.update();
-
-        const seconds = (this.day * 24 + this.timeOfDay) * 60 * 60;
-
-        await worker.onReply(
-          worker.postMessage({
-            type: "render",
-            latitude: 10,
-            leafGrowth: 1,
-            seconds: seconds,
-            camera: this.camera.matrix.toArray(),
-          })
-        );
-
+        await this.render();
         this.stats.endFrame();
         await rafPromise();
       }
+    })();
+  },
+
+  methods: {
+    render() {
+      const seconds = (this.day * 24 + this.timeOfDay) * 60 * 60;
+
+      return worker.onReply(
+        worker.postMessage({
+          type: "render",
+          latitude: this.latitude,
+          leafGrowth: this.leafGrowth,
+          seconds: seconds,
+          camera: this.camera.matrix.toArray(),
+        })
+      );
     },
   },
 
