@@ -16,12 +16,18 @@
     "jszip": "^3.6.0",
     "parcel": "^1.12.4",
     "stats.js": "^0.17.0",
-    "three": "^0.125"
+    "three": "^0.125",
+    "vue": "^2.6.12",
+    "vue-hot-reload-api": "^2.3.4"
   },
   "browserslist": [
     "last 1 Chrome version"
   ],
   "devDependencies": {
-    "typescript": "^4.1.5"
+    "@vue/component-compiler-utils": "^3.2.0",
+    "pug": "^3.0.0",
+    "sass": "^1.32.8",
+    "typescript": "^4.1.5",
+    "vue-template-compiler": "^2.6.12"
   }
 }
