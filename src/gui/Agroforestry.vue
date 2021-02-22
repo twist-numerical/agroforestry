@@ -16,28 +16,21 @@ function rafPromise(): Promise<void> {
   return p;
 }
 
-const worker = new MessageHandler(new Worker("../worker/worker.ts"));
+function getOrDefault<T>(value: T | undefined, def: T): T {
+  if (value === undefined) return def;
+}
 
 export default {
   props: {
     stats: {
       type: Statistics,
     },
-    day: {
-      type: Number,
-      default: 0,
+    settings: {
+      type: Object,
+      default: () => {},
     },
-    timeOfDay: {
-      type: Number,
-      default: 12,
-    },
-    leafGrowth: {
-      type: Number,
-      default: 0.5,
-    },
-    latitude: {
-      type: Number,
-      default: 10,
+    field: {
+      type: Object,
     },
   },
 
@@ -48,7 +41,7 @@ export default {
     this.canvas = this.$refs.canvas;
 
     this.resizeCallback = () => {
-      worker.postMessage({
+      this.worker.postMessage({
         type: "resize",
         width: this.canvas.clientWidth,
         height: this.canvas.clientHeight,
@@ -62,14 +55,8 @@ export default {
     this.camera.lookAt(0, 0, 0);
     this.controls.update();
 
-    const offscreen = this.canvas.transferControlToOffscreen();
-    worker.postMessage(
-      {
-        type: "init",
-        canvas: offscreen,
-      },
-      [offscreen]
-    );
+    this.initWorker();
+
     this.resizeCallback();
     window.addEventListener("resize", this.resizeCallback);
 
@@ -86,20 +73,44 @@ export default {
 
   methods: {
     render() {
-      const seconds = (this.day * 24 + this.timeOfDay) * 60 * 60;
+      const day = getOrDefault(this.settings.day, 0);
+      const time = getOrDefault(this.settings.timeOfDay, 12);
+      const seconds = (this.day * 24 + this.time) * 60 * 60;
 
-      return worker.onReply(
-        worker.postMessage({
+      return this.worker.onReply(
+        this.worker.postMessage({
           type: "render",
-          latitude: this.latitude,
-          leafGrowth: this.leafGrowth,
+          latitude: getOrDefault(this.settings.latitude, 10),
+          leafGrowth: getOrDefault(this.settings.leafGrowth, 0.5),
           seconds: seconds,
           camera: this.camera.matrix.toArray(),
         })
       );
     },
+    initWorker() {
+      const offscreen = this.canvas.transferControlToOffscreen();
+      this.worker = new MessageHandler(new Worker("../worker/worker.ts"));
+      this.worker.postMessage(
+        {
+          type: "init",
+          canvas: offscreen,
+        },
+        [offscreen]
+      );
+      this.worker.postMessage({ type: "loadField", field: this.field });
+    },
+    abort() {
+      if (this.worker !== undefined) {
+        this.worker.terminate();
+      }
+      this.initWorker();
+    },
   },
-
+  watch: {
+    field() {
+      this.worker.postMessage({ type: "loadField", field: this.field });
+    },
+  },
   destroyed() {
     this.__mounted = false;
     window.removeEventListener("resize", this.resizeCallback);

@@ -30,41 +30,12 @@ function requireManager(): FieldManager {
   return manager;
 }
 
-function d2r(d: number): number {
-  return (d * Math.PI) / 180;
-}
-
 const messages = {
   init({ canvas }) {
-    manager = new FieldManager(canvas, progress, progressDone);
-    manager.loadField({
-      field: {
-        size: 30.0,
-        latitude: 50.5,
-        rotation: d2r(0.0),
-        inclination: d2r(0),
-        inclinationRotation: d2r(45),
-      },
-      trees: [
-        {
-          position: [-5, 0],
-          leafLength: 0.2,
-          leafWidth: 0.2,
-          leavesPerTwig: 5,
-        },
-        {
-          position: [0, 1],
-          leafLength: 0.05,
-          leafWidth: 0.4,
-          leavesPerTwig: 10,
-        },
-      ],
-      sensors: {
-        size: [20, 20],
-        count: [64, 64],
-        renderSize: 1024,
-      },
-    });
+      manager = new FieldManager(canvas, progress, progressDone);
+  },
+  loadField({field})  {
+    manager.loadField(field);
   },
   resize(message: any) {
     requireManager().resize(message.width, message.height, message.pixelRatio);

@@ -22,6 +22,10 @@ import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 
+function d2r(d: number): number {
+  return (d * Math.PI) / 180;
+}
+
 export type RenderSettings = {
   latitude?: number;
   seconds?: number;
@@ -149,7 +153,7 @@ export default class FieldManager {
   }
 
   loadField(parameters: FieldParameters) {
-    this.field.rotation.set(0, parameters.field.rotation || 0, 0);
+    this.field.rotation.set(0, d2r(parameters.field.rotation) || 0, 0);
 
     this.ground.geometry.dispose();
     this.ground.geometry = new PlaneGeometry(
@@ -172,14 +176,14 @@ export default class FieldManager {
     this.sensors.position.set(0, 0.1, 0);
     this.ground.add(this.sensors);
 
-    const inclinationRotation = parameters.field.inclinationRotation || 0;
+    const inclinationRotation = d2r(parameters.field.inclinationRotation) || 0;
     this.ground.setRotationFromAxisAngle(
       new Vector3(
         Math.sin(inclinationRotation),
         0,
         -Math.cos(inclinationRotation)
       ),
-      parameters.field.inclination || 0
+      d2r(parameters.field.inclination) || 0
     );
 
     this.sunlight.setViewSize(1.5 * parameters.field.size);

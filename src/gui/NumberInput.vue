@@ -64,7 +64,7 @@ export default {
   },
   watch: {
     value() {
-      this.rawValue = this.value;
+      if (this.value != this.inputValue) this.rawValue = this.value;
     },
     inputValue() {
       if (this.valid) this.$emit("change", this.inputValue);
