@@ -4,8 +4,9 @@ div.gui.h-100.p-0.position-relative(
   @dragenter.prevent="onDrop"
   @dragover.prevent="onDrop"
 )
-  div.error-message(v-if="!!errorMessage")
+  div.error-message.position-absolute(v-if="!!errorMessage")
     | {{ errorMessage }}
+
   div.row.h-100.no-gutters
     form.col-5.h-100.position-relative.gui-padding-bottom
       div.update-panel.p-3.pt-0.row
@@ -83,17 +84,18 @@ div.gui.h-100.p-0.position-relative(
         button.btn.btn-link(type="button" @click="() => addTree()") Add new tree
 
 
-    agroforestry.col-7.h-100(
-      :stats="statistics"
-      :settings="settings"
-      :field="field"
-    )
+    div.col-7.h-100.position-relative
+      agroforestry(
+        :stats="statistics"
+        :settings="settings"
+        :field="field"
+      )
 </template>
 
 <script lang="ts">
 import Statistics from "./Statistics";
 import Agroforestry from "./Agroforestry.vue";
-import * as math from "mathjs";
+import settingsLayout from "./settingsLayout";
 import NumberInput from "./NumberInput.vue";
 import CoordinateInput from "./CoordinateInput.vue";
 import UploadFile from "./UploadFile.vue";
@@ -151,7 +153,6 @@ export default {
       },
     };
 
-    const self: any = this;
     return {
       statistics: new Statistics(50),
       updated: true,
@@ -164,174 +165,7 @@ export default {
       },
       field: field,
       changedField: clone(field),
-      settingsLayout: {
-        main: [
-          {
-            name: "Time of day",
-            value: "timeOfDay",
-            attributes: {
-              min: 0,
-              max: 24,
-            },
-          },
-          {
-            name: "Day",
-            value: "day",
-            attributes: {
-              precision: 0,
-              min: 0,
-              max: 366,
-            },
-          },
-          {
-            name: "Leaf growth",
-            value: "leafGrowth",
-            attributes: {
-              min: 0,
-              max: 1,
-            },
-          },
-        ],
-        sensors: [
-          {
-            name: "Size",
-            value: "size",
-            type: "coordinate",
-            attributes: {
-              get xbounds() {
-                return [
-                  -self.changedField.field.size / 2,
-                  self.changedField.field.size / 2,
-                ];
-              },
-              get ybounds() {
-                return [
-                  -self.changedField.field.size / 2,
-                  self.changedField.field.size / 2,
-                ];
-              },
-            },
-          },
-          {
-            name: "Count",
-            value: "count",
-            type: "coordinate",
-            attributes: {
-              xbounds: [1, 256],
-              ybounds: [1, 256],
-            },
-          },
-          {
-            name: "Render resolution",
-            value: "renderSize",
-            attributes: {
-              min: 0,
-              max: 1,
-              precision: 1,
-              convertToFloat(k: number) {
-                return (Math.log2(k) - 8) / 4;
-              },
-              convertFromFloat(k: number) {
-                return Math.pow(2, Math.round(8 + 4 * k));
-              },
-              parse: function(value: string) {
-                let k = Math.round(Math.log2(math.evaluate(value)));
-                const clamped = k < 8 ? 8 : k < 12 ? k : 12;
-                return Math.pow(2, clamped);
-              },
-            },
-          },
-        ],
-        field: [
-          {
-            name: "Size",
-            value: "size",
-            attributes: {
-              min: 1,
-              max: 100,
-            },
-          },
-          {
-            name: "Latitude",
-            value: "latitude",
-            attributes: {
-              min: -90,
-              max: 90,
-            },
-          },
-          {
-            name: "Rotation",
-            value: "rotation",
-            attributes: {
-              min: 0,
-              max: 360,
-              precision: 1,
-            },
-          },
-          {
-            name: "Inclination",
-            value: "inclination",
-            attributes: {
-              min: 0,
-              max: 90,
-            },
-          },
-          {
-            name: "Uphill",
-            value: "inclinationRotation",
-            attributes: {
-              min: 0,
-              max: 360,
-            },
-          },
-        ],
-        tree: [
-          {
-            name: "Position",
-            type: "coordinate",
-            value: "position",
-            attributes: {
-              get xbounds() {
-                return [
-                  -self.changedField.field.size / 2,
-                  self.changedField.field.size / 2,
-                ];
-              },
-              get ybounds() {
-                return [
-                  -self.changedField.field.size / 2,
-                  self.changedField.field.size / 2,
-                ];
-              },
-            },
-          },
-          {
-            name: "Leaf length",
-            value: "leafLength",
-            attributes: {
-              min: 0,
-              max: 1,
-            },
-          },
-          {
-            name: "Leaf width",
-            value: "leafWidth",
-            attributes: {
-              min: 0,
-              max: 1,
-            },
-          },
-          {
-            name: "Leaves per twig",
-            value: "leavesPerTwig",
-            attributes: {
-              min: 0,
-              max: 30,
-              precision: 0,
-            },
-          },
-        ],
-      },
+      settingsLayout: settingsLayout(this),
     };
   },
   methods: {
