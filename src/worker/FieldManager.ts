@@ -189,16 +189,13 @@ export default class FieldManager {
       d2r(parameters.field.inclination) || 0
     );
 
+    const renderSize = getOrDefault(parameters.sensors.renderSize, 1024);
     this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
     this.sunlight.setViewSize(1.5 * parameters.field.size);
-    this.sunlight.setRenderSize(
-      getOrDefault(parameters.sensors.renderSize, 1024)
-    );
+    this.sunlight.setRenderSize(renderSize);
 
     this.diffuseLight.setViewSize(1.5 * parameters.field.size);
-    this.diffuseLight.setRenderSize(
-      getOrDefault(parameters.sensors.renderSize, 1024)
-    );
+    this.diffuseLight.setRenderSize(renderSize);
 
     this.treeGroup.clear();
     while (this.trees.length) {

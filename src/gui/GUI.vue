@@ -42,6 +42,23 @@ div.gui.h-100.p-0.position-relative(
                 v-bind="setting.attributes"
                 v-model="changedField.field[setting.value]"
                 @input="invalidate")
+        
+        h2 Sensors
+
+        div.form-group
+          label.row(v-for="setting of settingsLayout.sensors")
+            div.col-4.col-form-label.col-form-label-sm.text-right {{setting.name}}
+            div.col-8.input-group-sm
+              coordinate-input.input-group-sm(
+                v-if="setting.type == 'coordinate'"
+                v-bind="setting.attributes"
+                v-model="changedField.sensors[setting.value]"
+                @input="invalidate")
+              number-input.form-control(
+                v-else
+                v-bind="setting.attributes"
+                v-model="changedField.sensors[setting.value]"
+                @input="invalidate")
 
         h2 Trees
 
@@ -76,6 +93,7 @@ div.gui.h-100.p-0.position-relative(
 <script lang="ts">
 import Statistics from "./Statistics";
 import Agroforestry from "./Agroforestry.vue";
+import * as math from "mathjs";
 import NumberInput from "./NumberInput.vue";
 import CoordinateInput from "./CoordinateInput.vue";
 import UploadFile from "./UploadFile.vue";
@@ -129,9 +147,11 @@ export default {
       sensors: {
         size: [16, 16],
         count: [20, 20],
+        renderSize: 1024,
       },
     };
 
+    const self: any = this;
     return {
       statistics: new Statistics(50),
       updated: true,
@@ -169,6 +189,56 @@ export default {
             attributes: {
               min: 0,
               max: 1,
+            },
+          },
+        ],
+        sensors: [
+          {
+            name: "Size",
+            value: "size",
+            type: "coordinate",
+            attributes: {
+              get xbounds() {
+                return [
+                  -self.changedField.field.size / 2,
+                  self.changedField.field.size / 2,
+                ];
+              },
+              get ybounds() {
+                return [
+                  -self.changedField.field.size / 2,
+                  self.changedField.field.size / 2,
+                ];
+              },
+            },
+          },
+          {
+            name: "Count",
+            value: "count",
+            type: "coordinate",
+            attributes: {
+              xbounds: [1, 256],
+              ybounds: [1, 256],
+            },
+          },
+          {
+            name: "Render resolution",
+            value: "renderSize",
+            attributes: {
+              min: 0,
+              max: 1,
+              precision: 1,
+              convertToFloat(k: number) {
+                return (Math.log2(k) - 8) / 4;
+              },
+              convertFromFloat(k: number) {
+                return Math.pow(2, Math.round(8 + 4 * k));
+              },
+              parse: function(value: string) {
+                let k = Math.round(Math.log2(math.evaluate(value)));
+                const clamped = k < 8 ? 8 : k < 12 ? k : 12;
+                return Math.pow(2, clamped);
+              },
             },
           },
         ],
@@ -221,8 +291,18 @@ export default {
             type: "coordinate",
             value: "position",
             attributes: {
-              xbounds: [-field.field.size / 2, field.field.size / 2],
-              ybounds: [-field.field.size / 2, field.field.size / 2],
+              get xbounds() {
+                return [
+                  -self.changedField.field.size / 2,
+                  self.changedField.field.size / 2,
+                ];
+              },
+              get ybounds() {
+                return [
+                  -self.changedField.field.size / 2,
+                  self.changedField.field.size / 2,
+                ];
+              },
             },
           },
           {
@@ -269,6 +349,7 @@ export default {
         leafWidth: 0.1,
         leavesPerTwig: 10,
       });
+      this.invalidate();
     },
     error(message: String, time: number = 5000) {
       this.errorMessage = message;
