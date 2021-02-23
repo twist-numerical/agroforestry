@@ -67,7 +67,7 @@ export default {
       if (this.value != this.inputValue) this.rawValue = this.value;
     },
     inputValue() {
-      if (this.valid) this.$emit("change", this.inputValue);
+      if (this.valid) this.$emit("input", this.inputValue);
     },
   },
   methods: {
@@ -78,10 +78,10 @@ export default {
       if (e.buttons) {
         const target = e.target as HTMLInputElement;
         var x = e.clientX - target.getBoundingClientRect().left; //x position within the element.
-        this.rawValue = +(
+        this.rawValue = clamp(+(
           this.min +
           ((this.max - this.min) * x) / target.clientWidth
-        ).toFixed(2);
+        ).toFixed(this.precision), this.min, this.max);
         e.preventDefault();
       }
     },
@@ -90,7 +90,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./colors.scss";
+@import "./style.scss";
 
 .number-input {
   position: relative;
@@ -99,7 +99,7 @@ export default {
   display: block;
   background: linear-gradient(
     90deg,
-    $primary-light var(--number-input-value),
+    theme-color(secondary) var(--number-input-value),
     #fff calc(var(--number-input-value) + 0.1%)
   );
 

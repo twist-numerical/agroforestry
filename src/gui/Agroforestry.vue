@@ -18,6 +18,7 @@ function rafPromise(): Promise<void> {
 
 function getOrDefault<T>(value: T | undefined, def: T): T {
   if (value === undefined) return def;
+  return value;
 }
 
 export default {
@@ -75,12 +76,11 @@ export default {
     render() {
       const day = getOrDefault(this.settings.day, 0);
       const time = getOrDefault(this.settings.timeOfDay, 12);
-      const seconds = (this.day * 24 + this.time) * 60 * 60;
+      const seconds = (day * 24 + time) * 60 * 60;
 
       return this.worker.onReply(
         this.worker.postMessage({
           type: "render",
-          latitude: getOrDefault(this.settings.latitude, 10),
           leafGrowth: getOrDefault(this.settings.leafGrowth, 0.5),
           seconds: seconds,
           camera: this.camera.matrix.toArray(),
@@ -114,6 +114,9 @@ export default {
   destroyed() {
     this.__mounted = false;
     window.removeEventListener("resize", this.resizeCallback);
+    if (this.worker !== undefined) {
+      this.worker.terminate();
+    }
   },
 };
 </script>

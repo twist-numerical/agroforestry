@@ -32,6 +32,10 @@ export default class MessageHandler {
     });
   }
 
+  terminate() {
+    this.__self.terminate();
+  }
+
   private pushMessage(message?: MessageEvent<Message>) {
     const lastResolve = this.__lastResolve;
     this.__messageQueue.push(

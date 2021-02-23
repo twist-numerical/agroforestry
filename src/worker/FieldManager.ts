@@ -8,7 +8,6 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
   PlaneGeometry,
-  RedFormat,
   Scene,
   SphereGeometry,
   Vector3,
@@ -37,6 +36,11 @@ export type RenderSettings = {
     diffuseLight?: boolean;
   };
 };
+
+function getOrDefault<T>(value: T | undefined, def: T) {
+  if (value === undefined) return def;
+  return value;
+}
 
 export type FieldParameters = {
   field: {
@@ -142,8 +146,7 @@ export default class FieldManager {
     this.camera.updateProjectionMatrix();
   }
 
-  setSettings({ latitude, seconds, leafGrowth, camera }: RenderSettings) {
-    if (latitude !== undefined) this.sun.setLatitude(latitude);
+  setSettings({ seconds, leafGrowth, camera }: RenderSettings) {
     if (seconds !== undefined) this.sun.setSeconds(seconds);
     if (leafGrowth !== undefined) this.setGrowth(leafGrowth);
     if (camera !== undefined) {
@@ -186,14 +189,23 @@ export default class FieldManager {
       d2r(parameters.field.inclination) || 0
     );
 
+    this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
     this.sunlight.setViewSize(1.5 * parameters.field.size);
-    this.sunlight.setRenderSize(parameters.sensors.renderSize || 1024);
+    this.sunlight.setRenderSize(
+      getOrDefault(parameters.sensors.renderSize, 1024)
+    );
 
     this.diffuseLight.setViewSize(1.5 * parameters.field.size);
-    this.diffuseLight.setRenderSize(parameters.sensors.renderSize || 1024);
+    this.diffuseLight.setRenderSize(
+      getOrDefault(parameters.sensors.renderSize, 1024)
+    );
 
     this.treeGroup.clear();
-    while (this.trees.length) this.trees.pop().dispose();
+    while (this.trees.length) {
+      const tree = this.trees.pop();
+      this.field.remove(tree);
+      tree.dispose();
+    }
 
     const treeMaterial = new MeshBasicMaterial({
       color: new Color("brown"),
