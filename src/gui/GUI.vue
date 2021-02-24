@@ -1,17 +1,18 @@
 <template lang="pug">
-div.gui.h-100.p-0.position-relative(
-  @drop.prevent="onDrop"
-  @dragenter.prevent="onDrop"
-  @dragover.prevent="onDrop"
-)
-  div.error-message.position-absolute(v-if="!!errorMessage")
-    | {{ errorMessage }}
+div.gui.h-100.p-0.position-relative.overflow-hidden
+  div.error-message(:class="{visible: showErrorMessage}")
+    div.error-message-text.alert.alert-danger
+      | {{ errorMessage }}
 
   div.row.h-100.no-gutters
-    form.col-5.h-100.position-relative.gui-padding-bottom
+    form.col-5.h-100.position-relative.gui-padding-bottom(
+        @drop.prevent="onDrop"
+        @dragenter.prevent="onDrop"
+        @dragover.prevent="onDrop"
+      )
       div.update-panel.p-3.pt-0.row
         div.col-4.text-center
-          UploadFile.btn.btn-link(@file="upload", accept=".json") 
+          upload-file.btn.btn-link(@file="upload", accept=".json") 
             | Import
         div.col-4.text-center
           button.btn.btn-link(
@@ -86,6 +87,7 @@ div.gui.h-100.p-0.position-relative(
 
     div.col-7.h-100.position-relative
       agroforestry(
+        ref="agroforestry"
         :stats="statistics"
         :settings="settings"
         :field="field"
@@ -157,6 +159,7 @@ export default {
       statistics: new Statistics(50),
       updated: true,
       errorMessage: "",
+      showErrorMessage: false,
       settings: {
         latitude: 53,
         timeOfDay: 12,
@@ -187,9 +190,10 @@ export default {
     },
     error(message: String, time: number = 5000) {
       this.errorMessage = message;
+      this.showErrorMessage = true;
       setTimeout(() => {
         if (this.errorMessage == message) {
-          this.errorMessage = "";
+          this.showErrorMessage = false;
         }
       }, time);
     },
@@ -246,5 +250,30 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
+}
+
+.error-message {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+
+  .error-message-text {
+    display: flex;
+    position: absolute;
+    margin: 0 auto;
+    top: 0;
+    height: 3em;
+    z-index: 100;
+    width: auto;
+    transition: top 500ms;
+  }
+
+  &.visible .error-message-text {
+    top: -5em;
+  }
 }
 </style>

@@ -15,12 +15,6 @@ function progress(message: string, value: number) {
   });
 }
 
-function progressDone() {
-  messageHandler.postMessage({
-    type: "progressDone",
-  });
-}
-
 let manager: FieldManager | undefined = undefined;
 function requireManager(): FieldManager {
   if (manager === undefined)
@@ -32,7 +26,7 @@ function requireManager(): FieldManager {
 
 const messages = {
   init({ canvas }) {
-      manager = new FieldManager(canvas, progress, progressDone);
+      manager = new FieldManager(canvas, progress);
   },
   loadField({field})  {
     manager.loadField(field);

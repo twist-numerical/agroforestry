@@ -92,7 +92,6 @@ export default class FieldManager {
   width: number = 300;
   height: number = 300;
   progress: (message: string, value: number) => void;
-  progressDone: () => void;
   drawViewOfSun: () => void;
   trees: LidarTree[] = [];
   treeGroup = new Group();
@@ -100,10 +99,8 @@ export default class FieldManager {
   constructor(
     canvas: HTMLCanvasElement,
     progress: (message: string, value: number) => void,
-    progressDone: () => void
   ) {
     this.progress = progress;
-    this.progressDone = progressDone;
     this.renderer = new WebGLRenderer({ canvas });
     this.photosynthesis = new Photosynthesis(this.renderer);
     this.field.add(this.ground);
@@ -256,7 +253,6 @@ export default class FieldManager {
       }
       this.progress("Calculating full year", day / 355);
     }
-    this.progressDone();
     return results;
   }
 

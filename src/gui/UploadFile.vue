@@ -15,8 +15,8 @@ export default Vue.extend({
   },
   methods: {
     fileUpload(event: any) {
-      console.log(event);
       this.$emit("file", event.target.files[0]);
+      event.target.value = [];
     },
   },
 });
