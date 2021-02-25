@@ -14,7 +14,7 @@ div.position-relative
 
     div.row.mb-3
       div.col-12
-        graph(
+        leaf-graph(
             :values="leafGrowth"
             :ymin="-0.05"
             :ymax="1.05"
@@ -25,7 +25,15 @@ div.position-relative
               height="0.3"
               x="0.5"
               y="0"
+              
           )
+          text(
+              x="0.5"
+              y="0.28"
+              textLength="0.25"
+              lengthAdjust="spacingAndGlyphs"
+              style="font-size: 0.05pt; text-anchor: bottom; fill: white"
+          ) &nbsp;summer&nbsp;
           template(v-slot:overlay="")
             rect.progress(
                 v-if="active"
@@ -40,7 +48,7 @@ div.position-relative
         button.btn.btn-link(type="button" v-show="active" @click="abort") Abort
       div.col-8.text-center
         button.btn.btn-primary(type="button" :disabled="active" @click="calculateLight") Calculate light
-  canvas(ref="canvas")
+  canvas(ref="canvas" :key="`canvas-${canvasID}`")
 </template>
 
 <script lang="ts">
@@ -48,10 +56,10 @@ import MessageHandler from "../worker/MessageHandler";
 import Statistics from "./Statistics";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PerspectiveCamera } from "three";
-import { map, range } from "../functional";
-import Graph from "./Graph.vue";
+import LeafGraph from "./LeafGraph.vue";
 import UploadFile from "./UploadFile.vue";
 import { saveAs } from "file-saver";
+import { clamp, map, range } from "../util";
 
 function rafPromise(): Promise<void> {
   let _resolve: () => void;
@@ -67,7 +75,7 @@ function getOrDefault<T>(value: T | undefined, def: T): T {
 
 export default {
   components: {
-    Graph,
+    LeafGraph,
     UploadFile,
   },
   props: {
@@ -90,42 +98,29 @@ export default {
       ),
       active: false,
       progress: 0,
+      canvasID: 0,
     };
   },
 
   mounted() {
     this.__mounted = true;
-    this.canvas = this.$refs.canvas;
 
     this.resizeCallback = () => {
       this.worker.postMessage({
         type: "resize",
-        width: this.canvas.clientWidth,
-        height: this.canvas.clientHeight,
+        width: this.$refs.canvas.clientWidth,
+        height: this.$refs.canvas.clientHeight,
         pixelRatio: window.devicePixelRatio,
       });
     };
 
     this.camera = new PerspectiveCamera();
-    this.controls = new OrbitControls(this.camera, this.canvas);
     this.camera.position.set(-30, 18, 3);
     this.camera.lookAt(0, 0, 0);
-    this.controls.update();
 
     this.initWorker();
 
-    this.resizeCallback();
     window.addEventListener("resize", this.resizeCallback);
-
-    (async () => {
-      while (this.__mounted) {
-        this.stats.beginFrame();
-        this.controls.update();
-        await this.render();
-        this.stats.endFrame();
-        await rafPromise();
-      }
-    })();
   },
 
   methods: {
@@ -144,7 +139,7 @@ export default {
       );
     },
     initWorker() {
-      const offscreen = this.canvas.transferControlToOffscreen();
+      const offscreen = this.$refs.canvas.transferControlToOffscreen();
       this.worker = new MessageHandler(new Worker("../worker/worker.ts"));
       this.worker.postMessage(
         {
@@ -153,12 +148,17 @@ export default {
         },
         [offscreen]
       );
+
       this.worker.postMessage({ type: "loadField", field: this.field });
+      this.resizeCallback();
+
+      if (this.controls) this.controls.dispose();
+      this.controls = new OrbitControls(this.camera, this.$refs.canvas);
+      this.controls.update();
 
       const messages = {
         progress: (message: any) => {
-          console.log(message);
-          this.progress = message.value;
+          this.progress = clamp(message.value, 0, 1);
         },
       };
 
@@ -171,37 +171,66 @@ export default {
           else action(messageEvent.data);
         }
       })();
+
+      (async () => {
+        while (this.__mounted) {
+          this.stats.beginFrame();
+          this.controls.update();
+          await this.render();
+          this.stats.endFrame();
+          await rafPromise();
+        }
+      })();
     },
     abort() {
       if (this.worker !== undefined) {
         this.active = false;
         this.worker.terminate();
+        ++this.canvasID;
+        this.$nextTick(() => this.initWorker(), 100);
       }
-      this.initWorker();
     },
     async calculateLight() {
       this.active = true;
       const messageEvent = await this.worker.onReply(
         this.worker.postMessage({
-          type: "year",
+          type: "light",
           leafGrowth: this.leafGrowth,
-          stepSize: 60*60,
+          stepSize: this.field.sensors.timeStepSize * 60,
         })
       );
-      const data = messageEvent.data.data;
+      this.active = false;
+
+      console.log(messageEvent);
 
       saveAs(
         new Blob(
-          map(
-            ([time, row]) =>
-              time + "," + row.map((v) => v.toPrecision(8)).join(",") + "\n",
-            data
-          ) as any,
+          messageEvent.data.sunlight.map(
+            ([day, time, row], index: number) =>
+              `${day}, ${time}, ${row
+                .map((v) => (index == 0 ? v : v.toPrecision(8)))
+                .join(",")}\n`
+          ),
           {
             type: "text/csv",
           }
         ),
         "sunlight.csv"
+      );
+
+      saveAs(
+        new Blob(
+          messageEvent.data.diffuseLight.map(
+            ([time, row], index: number) =>
+              `${time}, ${row
+                .map((v) => (index == 0 ? v : v.toPrecision(8)))
+                .join(",")}\n`
+          ),
+          {
+            type: "text/csv",
+          }
+        ),
+        "diffuse_light.csv"
       );
     },
     uploadLeafGrowth(file: File) {

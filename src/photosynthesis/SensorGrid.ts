@@ -4,20 +4,15 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
-  Mesh,
   MeshBasicMaterial,
-  MeshPhongMaterial,
-  Object3D,
   PlaneGeometry,
-  RawShaderMaterial,
 } from "three";
 import Photosynthesis from "./Photosynthesis";
 import PhotosynthesisMesh from "./PhotosynthesisMesh";
 
 const black = new Color("black");
 
-export default class SensorGrid
-  extends InstancedMesh
+export default class SensorGrid extends InstancedMesh
   implements PhotosynthesisMesh {
   photosynthesis: Photosynthesis;
   photosynthesisColor: InstancedBufferAttribute;

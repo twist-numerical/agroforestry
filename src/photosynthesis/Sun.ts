@@ -1,15 +1,4 @@
-import {
-  CylinderGeometry,
-  Mesh,
-  MeshBasicMaterial,
-  MeshNormalMaterial,
-  MeshPhongMaterial,
-  Object3D,
-  Quaternion,
-  Sphere,
-  SphereGeometry,
-  Vector3,
-} from "three";
+import { Object3D, Quaternion, Vector3 } from "three";
 
 const axis = {
   x: new Vector3(1, 0, 0),
@@ -49,11 +38,6 @@ export default class Sun extends Object3D {
 
   setLatitude(latitude: number) {
     this.latitudeRotation = (Math.PI / 180) * (90 - latitude);
-  }
-
-  isNight(): boolean {
-    return this.matrix.elements[1] > 0;
-    // TO DO: add horizon plane
   }
 
   updateMatrix() {

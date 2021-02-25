@@ -7,19 +7,21 @@ import {
   MeshBasicMaterial,
   OrthographicCamera,
   PerspectiveCamera,
+  Plane,
   PlaneGeometry,
   Scene,
   SphereGeometry,
   Vector3,
   WebGLRenderer,
 } from "three";
-import { range } from "../functional";
+import { constant, map, range } from "../util";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
 import LidarTree from "../photosynthesis/LidarTree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
+import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 
 function d2r(d: number): number {
   return (d * Math.PI) / 180;
@@ -62,6 +64,7 @@ export type FieldParameters = {
     size: [number, number];
     count: [number, number];
     renderSize?: number;
+    diffuseLightCount?: number;
   };
 };
 
@@ -84,7 +87,8 @@ export default class FieldManager {
   field = new Group();
   sunlight = new Sunlight(1, 1);
   camera = new PerspectiveCamera(45, 1, 1, 10000);
-  diffuseLight = new DiffuseLight(51, 1, 1);
+  diffuseLight = new DiffuseLight(1, 1, 1);
+  diffuseLightIndicator = new DiffuseLightIndicator();
   sunIndicator = new Mesh(
     new SphereGeometry(1, 21, 11),
     new MeshBasicMaterial({ color: "yellow" })
@@ -98,7 +102,7 @@ export default class FieldManager {
 
   constructor(
     canvas: HTMLCanvasElement,
-    progress: (message: string, value: number) => void,
+    progress: (message: string, value: number) => void
   ) {
     this.progress = progress;
     this.renderer = new WebGLRenderer({ canvas });
@@ -114,6 +118,8 @@ export default class FieldManager {
     this.sun.add(this.sunIndicator);
     this.scene.add(this.sun);
 
+    this.diffuseLight.add(this.diffuseLightIndicator);
+
     this.drawViewOfSun = (() => {
       const scene = new Scene();
       const planeMaterial = new MeshBasicMaterial();
@@ -126,6 +132,8 @@ export default class FieldManager {
         planeMaterial.map = this.sunlight.target.texture;
         //    if (this.photosynthesis.summaryTarget) {
         //  planeMaterial.map = this.photosynthesis.summaryTarget.texture;
+        this.photosynthesis.calculate(this.scene, [this.diffuseLight]);
+        planeMaterial.map = this.diffuseLight.target.texture;
         this.renderer.render(scene, camera);
         //  }
       };
@@ -166,8 +174,9 @@ export default class FieldManager {
 
     if (this.sensors) {
       this.sensors.dispose();
-      this.ground.clear();
     }
+    this.ground.clear();
+    this.ground.add(this.diffuseLight);
     this.sensors = new SensorGrid(
       this.photosynthesis,
       ...parameters.sensors.count,
@@ -191,8 +200,12 @@ export default class FieldManager {
     this.sunlight.setViewSize(1.5 * parameters.field.size);
     this.sunlight.setRenderSize(renderSize);
 
+    this.diffuseLight.setCount(
+      getOrDefault(parameters.sensors.diffuseLightCount, 13)
+    );
     this.diffuseLight.setViewSize(1.5 * parameters.field.size);
     this.diffuseLight.setRenderSize(renderSize);
+    this.diffuseLightIndicator.setLight(this.diffuseLight);
 
     this.treeGroup.clear();
     while (this.trees.length) {
@@ -226,46 +239,69 @@ export default class FieldManager {
     });
   }
 
-  calculateSunlight(settings: RenderSettings = {}) {
-    this.setSettings(settings);
-    this.sunIndicator.visible = false;
-    // this.diffuseIndicator.visible = false;
-    return this.photosynthesis.calculate(this.scene, [this.sunlight]);
+  isNight() {
+    const target = new Vector3(-1, 0, 0);
+    this.sun.updateWorldMatrix(true, false);
+    target.applyMatrix4(this.sun.matrixWorld);
+
+    this.ground.updateWorldMatrix(true, false);
+    const plane = new Plane(new Vector3(0, 1, 0));
+    plane.applyMatrix4(this.ground.matrixWorld);
+
+    return plane.distanceToPoint(target) < 0;
   }
 
-  calculateYear(stepSize: number, settings: RenderSettings = {}) {
-    const results = [];
-    this.progress("Calculating full year", 0);
+  calculateLight(
+    stepSize: number,
+    leafGrowth: number[],
+    settings: RenderSettings = {}
+  ) {
+    const sunlight: any = [["day", "time (s)", this.sensors.names]];
+    const diffuseLight: any = [["day", this.sensors.names]];
+    this.progress("Calculating light", 0);
     for (const day of range(0, 366)) {
       this.setSettings(settings);
-      this.sunIndicator.visible = false;
+      this.setGrowth(leafGrowth[day]);
+      this.indicatorsVisible = false;
 
       for (const time of range(0, 24 * 60 * 60, stepSize)) {
-        const timestamp = 24 * 60 * 60 * day + time;
-        this.sun.setSeconds(timestamp);
+        this.sun.setSeconds(24 * 60 * 60 * day + time);
 
-        if (!this.sun.isNight()) {
-          results.push([
-            timestamp,
-            this.photosynthesis.calculate(this.scene, [this.sunlight]),
-          ]);
-        }
+        sunlight.push([
+          day,
+          time,
+          this.isNight()
+            ? [...constant(0, this.photosynthesis.idCount)]
+            : this.photosynthesis.calculate(this.scene, [this.sunlight]),
+        ]);
       }
-      this.progress("Calculating full year", day / 355);
+
+      diffuseLight.push([
+        day,
+        this.photosynthesis.calculate(this.scene, [this.diffuseLight]),
+      ]);
+
+      this.progress("Calculating light", day / 356);
     }
-    return results;
+    console.log(sunlight);
+    return [sunlight, diffuseLight];
+  }
+
+  set indicatorsVisible(visible: boolean) {
+    this.diffuseLightIndicator.visible = visible;
+    this.sunIndicator.visible = visible;
   }
 
   render(settings: RenderSettings = {}) {
     this.setSettings(settings);
 
-    if (this.sun.isNight()) {
+    if (this.isNight()) {
       this.scene.background = new Color(0.2, 0.2, 0.2);
     } else {
       this.scene.background = new Color(0.9, 0.9, 0.9);
     }
 
-    this.sunIndicator.visible = true;
+    this.indicatorsVisible = true;
     this.renderer.setScissorTest(false);
     this.renderer.setViewport(0, 0, this.width, this.height);
     this.renderer.render(this.scene, this.camera);

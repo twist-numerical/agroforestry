@@ -26,9 +26,9 @@ function requireManager(): FieldManager {
 
 const messages = {
   init({ canvas }) {
-      manager = new FieldManager(canvas, progress);
+    manager = new FieldManager(canvas, progress);
   },
-  loadField({field})  {
+  loadField({ field }) {
     manager.loadField(field);
   },
   resize(message: any) {
@@ -41,20 +41,16 @@ const messages = {
       type: "renderDone",
     });
   },
-  year(message: any) {
-    const data = requireManager().calculateYear(message.stepSize, message);
+  light(message: any) {
+    const [sunlight, diffuseLight] = requireManager().calculateLight(
+      message.stepSize,
+      message.leafGrowth,
+    );
 
     messageHandler.reply(message, {
-      type: "yearDone",
-      data: data,
-    });
-  },
-  sunlight(message: any) {
-    const data = requireManager().calculateSunlight(message);
-
-    messageHandler.reply(message, {
-      type: "sunlightDone",
-      data: data,
+      type: "lightDone",
+      sunlight,
+      diffuseLight,
     });
   },
 };

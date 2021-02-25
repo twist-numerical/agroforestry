@@ -1,8 +1,5 @@
 import {
-  Color,
-  Material,
   Matrix4,
-  MeshBasicMaterial,
   OrthographicCamera,
   Scene,
   Vector3,
@@ -82,7 +79,7 @@ export default class DiffuseLight extends UVLight {
         this.target.texture,
         this.target.width,
         this.target.height,
-        this.pixelArea
+        this.pixelArea / this.transforms.length
       );
     });
   }

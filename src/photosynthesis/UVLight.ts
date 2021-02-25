@@ -1,12 +1,4 @@
-import {
-  Object3D,
-  MeshBasicMaterial,
-  Color,
-  Material,
-  Scene,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from "three";
+import { Object3D, Scene, WebGLRenderer, WebGLRenderTarget } from "three";
 import * as THREE from "three";
 import Photosynthesis from "./Photosynthesis";
 

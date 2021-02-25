@@ -1,11 +1,8 @@
 import {
-  BufferGeometry,
   Color,
-  Curve,
   CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
-  Group,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
   InstancedMesh,
@@ -13,7 +10,6 @@ import {
   Matrix4,
   Mesh,
   Object3D,
-  Quaternion,
   RawShaderMaterial,
   Vector3,
 } from "three";

@@ -1,9 +1,5 @@
 <template lang="pug">
-svg(
-    version="1.1"
-    baseProfile="full"
-    :viewBox="`0 0 1 ${aspectRatio}`"
-    xmlns="http://www.w3.org/2000/svg")
+svg(:viewBox="`0 0 1 ${aspectRatio}`")
   slot
   g(:transform="`scale(${1/values.length}) translate(0.5 0)`")
     path.graph-path(:d="path" :stroke-width="strokeWidth" fill="none")

@@ -4,7 +4,7 @@ import Stats from "stats.js";
 import * as dat from "dat.gui";
 import MessageHandler from "./worker/MessageHandler";
 import { saveAs } from "file-saver";
-import { map } from "./functional";
+import { map } from "./util";
 
 const stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom

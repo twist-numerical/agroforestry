@@ -132,27 +132,29 @@ export default {
         inclination: 2,
         inclinationRotation: 45,
       },
+      sensors: {
+        size: [16, 16],
+        count: [4, 4],
+        renderSize: 1024,
+        timeStepSize: 120,
+        diffuseLightCount: 21,
+      },
       trees: [
         {
-          position: [-5, 0],
+          position: [-5, -3],
           height: 12.5,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
         },
         {
-          position: [0, 1],
+          position: [5, 3],
           height: 12.5,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
         },
       ],
-      sensors: {
-        size: [16, 16],
-        count: [20, 20],
-        renderSize: 1024,
-      },
     };
 
     return {

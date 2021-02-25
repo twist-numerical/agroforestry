@@ -4,17 +4,12 @@ import {
   Camera,
   Color,
   DoubleSide,
-  InstancedMesh,
   Material,
   Mesh,
   MeshBasicMaterial,
-  OrthographicCamera,
-  PlaneGeometry,
   Points,
   RawShaderMaterial,
-  Renderer,
   Scene,
-  ShaderMaterial,
   Texture,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -230,6 +225,10 @@ export default class Photosynthesis {
       }
 
     this.renderer.autoClear = autoClear;
+  }
+
+  get idCount() {
+    return this.__nextID;
   }
 
   calculate(scene: Scene, lights: UVLight[]): number[] {

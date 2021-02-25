@@ -1,5 +1,13 @@
+export function clamp(value: number, min: number, max: number) {
+  return value < min ? min : value < max ? value : max;
+}
+
 export function* range(start: number, end: number, step = 1): Iterable<number> {
   for (let i = start; i < end; i += step) yield i;
+}
+
+export function* constant<T>(value: T, count: number = Infinity) {
+  for (let i = 0; i < count; ++i) yield value;
 }
 
 export function* zip<A, B>(a: Iterable<A>, b: Iterable<B>): Iterable<[A, B]> {

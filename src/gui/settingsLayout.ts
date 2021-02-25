@@ -73,6 +73,24 @@ export default function(guiElement: any) {
           },
         },
       },
+      {
+        name: "Time step size",
+        value: "timeStepSize",
+        attributes: {
+          min: 15,
+          max: 60*12,
+          precision: 0,
+        },
+      },
+      {
+        name: "Diffusion lights",
+        value: "diffuseLightCount",
+        attributes: {
+          min: 3,
+          max: 50,
+          precision: 0,
+        },
+      },
     ],
     field: [
       {

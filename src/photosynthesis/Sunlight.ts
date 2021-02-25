@@ -1,12 +1,4 @@
-import {
-  Color,
-  Material,
-  MeshBasicMaterial,
-  OrthographicCamera,
-  Scene,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from "three";
+import { OrthographicCamera, Scene, WebGLRenderer } from "three";
 import * as THREE from "three";
 import UVLight from "./UVLight";
 import Photosynthesis from "./Photosynthesis";
