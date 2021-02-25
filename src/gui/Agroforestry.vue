@@ -33,7 +33,7 @@ div.position-relative
               textLength="0.25"
               lengthAdjust="spacingAndGlyphs"
               style="font-size: 0.05pt; text-anchor: bottom; fill: white"
-          ) &nbsp;summer&nbsp;
+          ) {{String.fromCharCode(160)}}summer{{String.fromCharCode(160)}}
           template(v-slot:overlay="")
             rect.progress(
                 v-if="active"
