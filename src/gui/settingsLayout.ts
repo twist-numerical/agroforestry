@@ -78,7 +78,7 @@ export default function(guiElement: any) {
         value: "timeStepSize",
         attributes: {
           min: 15,
-          max: 60*12,
+          max: 60 * 12,
           precision: 0,
         },
       },
@@ -154,6 +154,22 @@ export default function(guiElement: any) {
             ];
           },
         },
+      },
+      {
+        name: "Height",
+        value: "height",
+        attributes: {
+          min: 0,
+          max: 30,
+        },
+      },
+      {
+        name: "Stem height",
+        value: "stemHeight",
+        attributes: (tree: any) => ({
+          min: 0,
+          max: tree.height,
+        }),
       },
       {
         name: "Leaf length",

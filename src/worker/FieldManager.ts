@@ -22,6 +22,7 @@ import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
+import Compass from "./Compass";
 
 function d2r(d: number): number {
   return (d * Math.PI) / 180;
@@ -81,6 +82,7 @@ export default class FieldManager {
       color: "#8a763a",
     })
   );
+  compass = new Compass();
   sensors: SensorGrid;
   renderer: WebGLRenderer;
   photosynthesis: Photosynthesis;
@@ -108,15 +110,14 @@ export default class FieldManager {
     this.renderer = new WebGLRenderer({ canvas });
     this.photosynthesis = new Photosynthesis(this.renderer);
     this.field.add(this.ground);
-    this.scene.add(this.field);
-    this.scene.add(this.camera);
     this.camera.matrixAutoUpdate = false;
 
     this.sunlight.lookAt(new Vector3(1, 0, 0));
     this.sunIndicator.position.set(-10, 0, 0);
     this.sun.add(this.sunlight);
     this.sun.add(this.sunIndicator);
-    this.scene.add(this.sun);
+
+    this.scene.add(this.field, this.camera, this.sun, this.compass);
 
     this.diffuseLight.add(this.diffuseLightIndicator);
 
@@ -133,7 +134,7 @@ export default class FieldManager {
         //    if (this.photosynthesis.summaryTarget) {
         //  planeMaterial.map = this.photosynthesis.summaryTarget.texture;
         this.photosynthesis.calculate(this.scene, [this.diffuseLight]);
-        planeMaterial.map = this.diffuseLight.target.texture;
+        // planeMaterial.map = this.diffuseLight.target.texture;
         this.renderer.render(scene, camera);
         //  }
       };
@@ -161,13 +162,14 @@ export default class FieldManager {
   }
 
   loadField(parameters: FieldParameters) {
-    this.field.rotation.set(0, d2r(parameters.field.rotation) || 0, 0);
+    const rotation = d2r(parameters.field.rotation) || 0;
+    const fieldSize = parameters.field.size;
+    this.field.rotation.set(0, rotation, 0);
+    this.compass.setRotation(rotation);
+    this.compass.position.set(fieldSize / 2, 0, fieldSize / 2);
 
     this.ground.geometry.dispose();
-    this.ground.geometry = new PlaneGeometry(
-      parameters.field.size,
-      parameters.field.size
-    );
+    this.ground.geometry = new PlaneGeometry(fieldSize, fieldSize);
     this.ground.geometry.applyMatrix4(new Matrix4().makeRotationX(Math.PI / 2));
 
     this.photosynthesis.clear();
@@ -186,14 +188,13 @@ export default class FieldManager {
     this.ground.add(this.sensors);
 
     const inclinationRotation = d2r(parameters.field.inclinationRotation) || 0;
-    this.ground.setRotationFromAxisAngle(
-      new Vector3(
-        Math.sin(inclinationRotation),
-        0,
-        -Math.cos(inclinationRotation)
-      ),
-      d2r(parameters.field.inclination) || 0
+    const inclination = d2r(parameters.field.inclination) || 0;
+    const inclinationAxis = new Vector3(
+      Math.sin(inclinationRotation),
+      0,
+      -Math.cos(inclinationRotation)
     );
+    this.ground.setRotationFromAxisAngle(inclinationAxis, inclination);
 
     const renderSize = getOrDefault(parameters.sensors.renderSize, 1024);
     this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
@@ -207,11 +208,8 @@ export default class FieldManager {
     this.diffuseLight.setRenderSize(renderSize);
     this.diffuseLightIndicator.setLight(this.diffuseLight);
 
-    this.treeGroup.clear();
     while (this.trees.length) {
-      const tree = this.trees.pop();
-      this.field.remove(tree);
-      tree.dispose();
+      this.trees.pop().dispose();
     }
 
     const treeMaterial = new MeshBasicMaterial({
@@ -227,9 +225,10 @@ export default class FieldManager {
       });
       const [x, y] = treeParameters.position;
       tree.position.set(x, 0, y);
-      tree.rotation.set(0, Math.PI * 2 * Math.random(), 0);
+      tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
+      tree.rotateY(Math.PI * 2 * Math.random());
       this.trees.push(tree);
-      this.field.add(tree);
+      this.ground.add(tree);
     }
   }
 
@@ -283,13 +282,13 @@ export default class FieldManager {
 
       this.progress("Calculating light", day / 356);
     }
-    console.log(sunlight);
     return [sunlight, diffuseLight];
   }
 
   set indicatorsVisible(visible: boolean) {
     this.diffuseLightIndicator.visible = visible;
     this.sunIndicator.visible = visible;
+    this.compass.visible = visible;
   }
 
   render(settings: RenderSettings = {}) {
@@ -307,7 +306,9 @@ export default class FieldManager {
     this.renderer.render(this.scene, this.camera);
 
     /* {
-      this.renderer.setScissorTest(true);
+      this.indicatorsVisible = false;
+      this.photosynthesis.calculate(this.scene, [this.sunlight]),
+        this.renderer.setScissorTest(true);
       const size = 300;
       this.renderer.setScissor(0, 0, size, size);
       this.renderer.setViewport(0, 0, size, size);

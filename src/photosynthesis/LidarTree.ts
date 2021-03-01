@@ -15,6 +15,14 @@ import {
 } from "three";
 import lidarTreeData from "./agroforestry.txt";
 
+const treeConfiguration = {
+  tree_lidar_1: {
+    segments: lidarTreeData,
+    height: 14.2,
+    stemHeight: 5.6,
+  },
+};
+
 class LeafMaterial extends RawShaderMaterial {
   constructor() {
     super({
@@ -174,6 +182,9 @@ type TreeParameters = {
   leafWidth?: number;
   leavesPerTwig?: number;
   maxTwigRadius?: number;
+  height?: number;
+  stemHeight?: number;
+  type?: string;
 };
 
 export default class LidarTree extends Object3D {
@@ -185,6 +196,8 @@ export default class LidarTree extends Object3D {
   constructor(material: Material, parameters: TreeParameters = {}) {
     super();
 
+    const treeConfig =
+      treeConfiguration[parameters.type] || treeConfiguration["tree_lidar_1"];
     parameters = {
       radialSegments: 7,
       leaves: false,
@@ -192,6 +205,8 @@ export default class LidarTree extends Object3D {
       leafWidth: 0.1,
       leavesPerTwig: 5,
       maxTwigRadius: 0.1,
+      height: treeConfig.height,
+      stemHeight: treeConfig.stemHeight,
       ...parameters,
     };
 
@@ -206,7 +221,27 @@ export default class LidarTree extends Object3D {
       new Matrix4().makeRotationX(Math.PI / 2).setPosition(0, 0, 0.5)
     );
 
-    lidarTree.then((segments) => {
+    lidarTree.then((rawSegments) => {
+      const scaleTree = parameters.height / treeConfig.height;
+      const scaledStem = treeConfig.stemHeight * scaleTree;
+      const transformPoint = (raw: Vector3) => {
+        const v = raw.clone().multiplyScalar(scaleTree);
+        if (v.y < scaledStem) {
+          v.y *= parameters.stemHeight / scaledStem;
+        } else {
+          v.y =
+            parameters.stemHeight +
+            ((v.y - scaledStem) / (parameters.height - scaledStem)) *
+              (parameters.height - parameters.stemHeight);
+        }
+        return v;
+      };
+      const segments = rawSegments.map(({ start, end, radius }) => ({
+        start: transformPoint(start),
+        end: transformPoint(end),
+        radius: scaleTree * radius,
+      }));
+
       this.tree = new InstancedMesh(
         geometry,
         material.clone(),

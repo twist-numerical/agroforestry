@@ -70,16 +70,16 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
             div.col-8.input-group-sm
               coordinate-input.input-group-sm(
                 v-if="setting.type == 'coordinate'"
-                v-bind="setting.attributes"
+                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
                 v-model="tree[setting.value]"
                 @input="invalidate")
               number-input.form-control(
                 v-else
-                v-bind="setting.attributes"
+                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
                 v-model="tree[setting.value]"
                 @input="invalidate")
           div.clearfix
-            button.float-right.btn.btn-link.btn-sm(type="button" @click="() => changedField.trees.splice(index, 1)") Remove
+            button.float-right.btn.btn-link.btn-sm(type="button" @click="() => { changedField.trees.splice(index, 1); invalidate(); }") Remove
           div.col-12.float-none
             hr
         button.btn.btn-link(type="button" @click="() => addTree()") Add new tree
@@ -128,8 +128,8 @@ export default {
       field: {
         size: 32,
         latitude: 50.5,
-        rotation: 180,
-        inclination: 2,
+        rotation: 15,
+        inclination: 5,
         inclinationRotation: 45,
       },
       sensors: {
@@ -142,14 +142,16 @@ export default {
       trees: [
         {
           position: [-5, -3],
-          height: 12.5,
+          height: 14.2,
+          stemHeight: 5.6,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
         },
         {
           position: [5, 3],
-          height: 12.5,
+          height: 14.2,
+          stemHeight: 5.6,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
@@ -184,6 +186,8 @@ export default {
     addTree() {
       this.changedField.trees.push({
         position: [0, 0],
+        height: 14.2,
+        stemHeight: 5.6,
         leafLength: 0.1,
         leafWidth: 0.1,
         leavesPerTwig: 10,
