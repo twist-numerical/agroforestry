@@ -16,7 +16,7 @@ import {
 } from "three";
 import { constant, map, range } from "../util";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
-import LidarTree from "../photosynthesis/LidarTree";
+import LidarTree from "../tree/LidarTree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";

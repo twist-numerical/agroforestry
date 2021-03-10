@@ -13,15 +13,7 @@ import {
   RawShaderMaterial,
   Vector3,
 } from "three";
-import lidarTreeData from "./agroforestry.txt";
-
-const treeConfiguration = {
-  tree_lidar_1: {
-    segments: lidarTreeData,
-    height: 14.2,
-    stemHeight: 5.6,
-  },
-};
+import treeConfiguration from "./treeConfiguration";
 
 class LeafMaterial extends RawShaderMaterial {
   constructor() {
