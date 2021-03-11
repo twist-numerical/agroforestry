@@ -73,6 +73,13 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
                 v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
                 v-model="tree[setting.value]"
                 @input="invalidate")
+              select(
+                v-else-if="setting.type == 'select'"
+                v-model="tree[setting.value]"
+                @input="invalidate")
+                option(
+                  v-for="option of setting.options",
+                  :value="option.value") {{option.name}}
               number-input.form-control(
                 v-else
                 v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
@@ -83,6 +90,22 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
           div.col-12.float-none
             hr
         button.btn.btn-link(type="button" @click="() => addTree()") Add new tree
+
+        hr
+        div.form-group
+          h4 References
+          ul
+            li
+              cite
+                | Van Den Berge Sanne, Vangansbeke Pieter, Calders Kim, Vanneste Thomas, Baeten Lander, Verbeeck Hans, … Verheyen Kris.
+                | <emph>Terrestrial laser scanning - RIEGL VZ-1000, individual tree point clouds and cylinder models, Belgian hedgerows and tree rows [Data set].</emph>
+                | Zenodo. (2021) <a href="http://doi.org/10.5281/zenodo.4487116">http://doi.org/10.5281/zenodo.4487116</a>
+            li
+              cite
+                | Van Den Berge, S., Vangansbeke, P., Calders, K. et al.
+                | <emph>Biomass Expansion Factors for Hedgerow-Grown Trees Derived from Terrestrial LiDAR.</emph>
+                | Bioenerg. Res. (2021).
+                | <a href="https://doi.org/10.1007/s12155-021-10250-y">https://doi.org/10.1007/s12155-021-10250-y</a>
 
 
     div.col-7.h-100.position-relative
@@ -126,7 +149,7 @@ export default {
   data() {
     const field = {
       field: {
-        size: 32,
+        size: 40,
         latitude: 50.5,
         rotation: 15,
         inclination: 5,
@@ -141,20 +164,34 @@ export default {
       },
       trees: [
         {
-          position: [-5, -3],
-          height: 14.2,
-          stemHeight: 5.6,
+          type: "oak_young",
+          position: [-5, -5],
+          scale: 1,
+          rotation: 0,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
+          maxTwigRadius: 0.05,
         },
         {
-          position: [5, 3],
-          height: 14.2,
-          stemHeight: 5.6,
+          type: "oak_medium",
+          position: [0,0],
+          scale: 1,
+          rotation: 120,
           leafLength: 0.1,
           leafWidth: 0.2,
           leavesPerTwig: 10,
+          maxTwigRadius: 0.05,
+        },
+        {
+          type: "oak_old",
+          position: [5, 5],
+          scale: 1,
+          rotation: 240,
+          leafLength: 0.2,
+          leafWidth: 0.2,
+          leavesPerTwig: 10,
+          maxTwigRadius: 0.05,
         },
       ],
     };
@@ -186,11 +223,12 @@ export default {
     addTree() {
       this.changedField.trees.push({
         position: [0, 0],
-        height: 14.2,
-        stemHeight: 5.6,
+        scale: 1,
+        rotate: 0,
         leafLength: 0.1,
         leafWidth: 0.1,
         leavesPerTwig: 10,
+        maxTwigRadius: 0.05,
       });
       this.invalidate();
     },

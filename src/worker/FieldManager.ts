@@ -55,6 +55,9 @@ export type FieldParameters = {
   };
   trees: {
     position: [number, number];
+    type: string;
+    scale?: number;
+    rotation?: number;
     leaves?: boolean;
     leafLength?: number;
     leafWidth?: number;
@@ -113,7 +116,7 @@ export default class FieldManager {
     this.camera.matrixAutoUpdate = false;
 
     this.sunlight.lookAt(new Vector3(1, 0, 0));
-    this.sunIndicator.position.set(-10, 0, 0);
+    this.sunIndicator.position.set(-20, 0, 0);
     this.sun.add(this.sunlight);
     this.sun.add(this.sunIndicator);
 
@@ -226,7 +229,7 @@ export default class FieldManager {
       const [x, y] = treeParameters.position;
       tree.position.set(x, 0, y);
       tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
-      tree.rotateY(Math.PI * 2 * Math.random());
+      tree.rotateY(d2r(getOrDefault(treeParameters.rotation, 0)));
       this.trees.push(tree);
       this.ground.add(tree);
     }

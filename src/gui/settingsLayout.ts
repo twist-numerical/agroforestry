@@ -156,20 +156,38 @@ export default function(guiElement: any) {
         },
       },
       {
-        name: "Height",
-        value: "height",
+        name: "Scale",
+        value: "scale",
         attributes: {
-          min: 0,
-          max: 30,
+          min: 0.5,
+          max: 2,
+          precision: 2,
         },
       },
       {
-        name: "Stem height",
-        value: "stemHeight",
-        attributes: (tree: any) => ({
+        name: "Rotation",
+        value: "rotation",
+        attributes: {
           min: 0,
-          max: tree.height,
-        }),
+          max: 360,
+          precision: 1,
+        },
+      },
+      {
+        name: "Type",
+        value: "type",
+        type: "select",
+        options: [
+          { name: "Alder young", value: "alder_young" },
+          { name: "Alder medium", value: "alder_medium" },
+          { name: "Alder old", value: "alder_old" },
+          { name: "Birch young", value: "birch_young" },
+          { name: "Birch medium", value: "birch_medium" },
+          { name: "Birch old", value: "birch_old" },
+          { name: "Oak young", value: "oak_young" },
+          { name: "Oak medium", value: "oak_medium" },
+          { name: "Oak old", value: "oak_old" },
+        ],
       },
       {
         name: "Leaf length",
@@ -194,6 +212,15 @@ export default function(guiElement: any) {
           min: 0,
           max: 30,
           precision: 0,
+        },
+      },
+      {
+        name: "Max twig radius",
+        value: "maxTwigRadius",
+        attributes: {
+          min: 0,
+          max: 0.5,
+          precision: 2,
         },
       },
     ],
