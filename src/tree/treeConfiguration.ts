@@ -22,7 +22,7 @@ function register_tree(segmentFile: string): () => Promise<TreeData> {
         .split(/\s+/)
         .map((a) => parseFloat(a));
 
-      const offset = new Vector3(lidar[0], lidar[2], lidar[1]);
+      const offset = new Vector3(lidar[3], lidar[5], lidar[4]);
       const segments: TreeSegment[] = [];
       for (let i = 0; i < lidar.length; i += 7) {
         segments.push({
