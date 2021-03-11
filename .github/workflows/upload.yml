@@ -2,13 +2,11 @@ name: Build and upload agroforestry
 
 on:
   push:
-    branches:
-      - main
     tags:
       - v*
 
 jobs:
-  build:
+  build_and_upload:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
