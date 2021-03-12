@@ -13,5 +13,5 @@ jobs:
       - uses: actions/setup-node@v2
       - run: npm install
       - run: npm run build
-      - run: zip dist.zip dist/*
+      - run: zip -j dist.zip dist/*
       - run: curl -F 'dist=@dist.zip' https://agroforestry.ugent.be/upload.php?key=${{ secrets.UPLOAD_KEY }}
