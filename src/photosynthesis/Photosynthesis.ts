@@ -4,6 +4,8 @@ import {
   Camera,
   Color,
   DoubleSide,
+  FloatType,
+  HalfFloatType,
   Material,
   Mesh,
   MeshBasicMaterial,
@@ -91,10 +93,11 @@ void main()	{
 });
 
 function mostPreciseSupportedType(renderer: WebGLRenderer) {
-  if (!!renderer.extensions.get("EXT_color_buffer_float")) {
-    console.log("Support for FLOAT, using halfFloat");
+  if (renderer.extensions.has("EXT_color_buffer_float")) {
+    // TODO detect real capabilities
+    console.log("Support for FLOAT, but using halfFloat");
     return THREE.HalfFloatType;
-  } else if (!!renderer.extensions.get("EXT_color_buffer_half_float")) {
+  } else if (renderer.extensions.has("EXT_color_buffer_half_float")) {
     console.log("Only support for HALF_FLOAT");
     return THREE.HalfFloatType;
   } else {
@@ -105,33 +108,32 @@ function mostPreciseSupportedType(renderer: WebGLRenderer) {
   }
 }
 
-function newDataRenderTarget(
-  renderer: WebGLRenderer,
-  width: number,
-  height: number
-) {
-  const target = new WebGLRenderTarget(width, height, {
-    format: THREE.RedFormat,
-    type: mostPreciseSupportedType(renderer),
-    minFilter: THREE.NearestFilter,
-    magFilter: THREE.NearestFilter,
-  });
-  return target;
+function parseHalfFloat(f: number): number {
+  const sign = f & 0b1_00000_00000_00000 ? -1 : 1;
+  const exp = (f >> 10) & 0b11111;
+  const mantisse = (exp ? 1 : 0) + (f & 0b11111_11111) / 1024;
+  const value = sign * mantisse;
+  if (exp === 0) return mantisse === 0 ? 0 : value / (1 << 14); // zero, subnormal
+  if (exp === 31) return mantisse === 1 ? sign * Infinity : NaN; // inf, nan
+  if (exp < 15) return value / (1 << (15 - exp)); // < 1
+  return value * (1 << (exp - 15)); // >= 1
 }
 
 export default class Photosynthesis {
   renderer: WebGLRenderer;
   private __nextID = 0;
 
+  floatType = THREE.FloatType;
   camera = new Camera();
   scene = new Scene();
   points = new Points(new BufferGeometry(), summaryMaterial.clone());
   summaryTarget: WebGLRenderTarget;
-  private summaryBuffer: Float32Array;
+  private summaryBuffer: Float32Array | Uint16Array | Uint8Array;
   __colors = new Map<number, Color>();
 
   constructor(renderer: WebGLRenderer) {
     this.renderer = renderer;
+    this.floatType = mostPreciseSupportedType(renderer);
 
     this.points.frustumCulled = false;
 
@@ -149,6 +151,16 @@ export default class Photosynthesis {
     );
 
     this.scene.add(this.points);
+  }
+
+  newDataRenderTarget(width: number, height: number) {
+    const target = new WebGLRenderTarget(width, height, {
+      format: THREE.RedFormat,
+      type: this.floatType,
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+    });
+    return target;
   }
 
   getColor(photosynthesisID?: number) {
@@ -199,9 +211,15 @@ export default class Photosynthesis {
     if (this.summaryTarget && rows <= this.summaryTarget.height) return;
 
     if (this.summaryTarget !== undefined) this.summaryTarget.dispose();
-    this.summaryTarget = newDataRenderTarget(this.renderer, summaryWidth, rows);
+    this.summaryTarget = this.newDataRenderTarget(summaryWidth, rows);
 
-    this.summaryBuffer = new Float32Array(summaryWidth * rows);
+    if (this.floatType == FloatType) {
+      this.summaryBuffer = new Float32Array(summaryWidth * rows);
+    } else if (this.floatType == HalfFloatType) {
+      this.summaryBuffer = new Uint16Array(summaryWidth * rows);
+    } else {
+      this.summaryBuffer = new Uint8Array(summaryWidth * rows);
+    }
   }
 
   nextID(): number {
@@ -299,6 +317,11 @@ export default class Photosynthesis {
 
     this.renderer.setRenderTarget(null);
 
+    if (this.floatType === HalfFloatType) {
+      return [...this.summaryBuffer.slice(0, this.__nextID)].map(
+        parseHalfFloat
+      );
+    }
     return [...this.summaryBuffer.slice(0, this.__nextID)];
   }
 }
