@@ -90,10 +90,29 @@ void main()	{
 `,
 });
 
-function newDataRenderTarget(width: number, height: number) {
+function mostPreciseSupportedType(renderer: WebGLRenderer) {
+  if (renderer.extensions.get("EXT_color_buffer_float")) {
+    console.log("Support for FLOAT");
+    return THREE.FloatType;
+  } else if (renderer.extensions.get("EXT_color_buffer_half_float")) {
+    console.log("Only support for HALF_FLOAT");
+    return THREE.HalfFloatType;
+  } else {
+    console.error(
+      "No support for floating point types, everything will break..."
+    );
+    return THREE.ByteType;
+  }
+}
+
+function newDataRenderTarget(
+  renderer: WebGLRenderer,
+  width: number,
+  height: number
+) {
   const target = new WebGLRenderTarget(width, height, {
     format: THREE.RedFormat,
-    type: THREE.FloatType,
+    type: mostPreciseSupportedType(renderer),
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
   });
@@ -180,7 +199,7 @@ export default class Photosynthesis {
     if (this.summaryTarget && rows <= this.summaryTarget.height) return;
 
     if (this.summaryTarget !== undefined) this.summaryTarget.dispose();
-    this.summaryTarget = newDataRenderTarget(summaryWidth, rows);
+    this.summaryTarget = newDataRenderTarget(this.renderer, summaryWidth, rows);
 
     this.summaryBuffer = new Float32Array(summaryWidth * rows);
   }
