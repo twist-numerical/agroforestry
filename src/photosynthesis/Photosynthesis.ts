@@ -95,8 +95,8 @@ void main()	{
 function mostPreciseSupportedType(renderer: WebGLRenderer) {
   if (renderer.extensions.has("EXT_color_buffer_float")) {
     // TODO detect real capabilities
-    console.log("Support for FLOAT, but using halfFloat");
-    return THREE.HalfFloatType;
+    console.log("Support for FLOAT");
+    return THREE.FloatType;
   } else if (renderer.extensions.has("EXT_color_buffer_half_float")) {
     console.log("Only support for HALF_FLOAT");
     return THREE.HalfFloatType;
