@@ -91,10 +91,10 @@ void main()	{
 });
 
 function mostPreciseSupportedType(renderer: WebGLRenderer) {
-  if (renderer.extensions.get("EXT_color_buffer_float")) {
-    console.log("Support for FLOAT");
-    return THREE.FloatType;
-  } else if (renderer.extensions.get("EXT_color_buffer_half_float")) {
+  if (!!renderer.extensions.get("EXT_color_buffer_float")) {
+    console.log("Support for FLOAT, using halfFloat");
+    return THREE.HalfFloatType;
+  } else if (!!renderer.extensions.get("EXT_color_buffer_half_float")) {
     console.log("Only support for HALF_FLOAT");
     return THREE.HalfFloatType;
   } else {
