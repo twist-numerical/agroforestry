@@ -1,9 +1,6 @@
 name: Build and upload agroforestry
 
-on:
-  push:
-    tags:
-      - v*
+on: workflow_dispatch
 
 jobs:
   build_and_upload:

@@ -98,7 +98,7 @@ export default function(guiElement: any) {
         value: "size",
         attributes: {
           min: 1,
-          max: 10000,
+          max: 2000,
         },
       },
       {
