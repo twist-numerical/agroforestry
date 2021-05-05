@@ -80,8 +80,7 @@ export default class LidarTree extends Object3D {
       if (parameters.leaves) {
         this.leaves = new TreeLeaves(
           segments
-            .filter(({ radius }) => radius < parameters.maxTwigRadius)
-            .map(({ end }) => end),
+            .filter(({ radius }) => radius < parameters.maxTwigRadius),
           {
             leafLength: parameters.leafLength,
             leafWidth: parameters.leafWidth,

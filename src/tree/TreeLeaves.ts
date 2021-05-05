@@ -70,11 +70,17 @@ export class LeafMaterial extends RawShaderMaterial {
   }
 }
 
+export interface Twig {
+  start: Vector3;
+  end: Vector3;
+  radius: Number;
+}
+
 export default class TreeLeaves extends Mesh {
   material: RawShaderMaterial;
 
   constructor(
-    twigs: Vector3[],
+    twigs: Twig[],
     parameters: {
       leafLength: number;
       leafWidth: number;
@@ -107,6 +113,7 @@ export default class TreeLeaves extends Mesh {
     const up = new Vector3();
     const side = new Vector3();
     let index = 0;
+    const lerp = new Vector3();
     twigs.forEach((twig) => {
       for (let i = 0; i < parameters.leavesPerTwig; ++i) {
         randomOnSphere(up);
@@ -119,7 +126,9 @@ export default class TreeLeaves extends Mesh {
         side
           .multiplyScalar(leafSize * parameters.leafWidth)
           .toArray(rotateSide.array, index);
-        twig.toArray(offset.array, index);
+        lerp
+          .lerpVectors(twig.start, twig.end, Math.random())
+          .toArray(offset.array, index);
         index += 3;
       }
     });
