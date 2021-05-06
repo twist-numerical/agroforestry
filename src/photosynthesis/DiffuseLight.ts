@@ -14,11 +14,16 @@ const eye = new Vector3(0, 1, 0);
 const center = new Vector3(0, 0, 0);
 const up = new Vector3(0, 1, 0);
 
+interface Sensor {
+  transform: Matrix4;
+  power: number;
+}
+
 export default class DiffuseLight extends UVLight {
   light = new THREE.DirectionalLight(0xaaaaaa);
   camera: OrthographicCamera;
   target: WebGLRenderTarget;
-  transforms: Matrix4[] = [];
+  sensors: Sensor[] = [];
   viewSize: number;
 
   constructor(count: number, viewSize: number, renderSize: number) {
@@ -50,7 +55,7 @@ export default class DiffuseLight extends UVLight {
   }
 
   setCount(count: number) {
-    this.transforms = [];
+    this.sensors = [];
     const phi = 0.5 * (1 + Math.sqrt(5));
     const golden_angle = 2 * Math.PI * (2 - phi);
     for (let i = 1; i <= count; ++i) {
@@ -61,7 +66,10 @@ export default class DiffuseLight extends UVLight {
         Math.sin(lat),
         Math.sin(lon) * Math.cos(lat)
       );
-      this.transforms.push(new Matrix4().lookAt(eye, center, up));
+      this.sensors.push({
+        power: (1 + 2 * Math.sin(lat)) / 3, // Standard Overcast Sky
+        transform: new Matrix4().lookAt(eye, center, up),
+      });
     }
   }
 
@@ -70,8 +78,10 @@ export default class DiffuseLight extends UVLight {
     scene: Scene,
     photosynthesis: Photosynthesis
   ) {
-    this.transforms.forEach((matrix) => {
-      this.camera.matrix = matrix;
+    const pa = this.pixelArea;
+    const total_power = this.sensors.reduce((s, { power }) => s + power, 0);
+    this.sensors.forEach(({ transform, power }) => {
+      this.camera.matrix = transform;
       this.camera.matrixWorldNeedsUpdate = true;
       renderer.setRenderTarget(this.target);
       renderer.render(scene, this.camera);
@@ -79,7 +89,7 @@ export default class DiffuseLight extends UVLight {
         this.target.texture,
         this.target.width,
         this.target.height,
-        this.pixelArea / this.transforms.length
+        (power * pa) / total_power
       );
     });
   }

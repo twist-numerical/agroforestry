@@ -208,7 +208,7 @@ export default class FieldManager {
     this.sunlight.setViewSize(1.5 * parameters.field.size);
     this.sunlight.setRenderSize(renderSize);
     this.sunIndicator.position.set(-parameters.field.size, 0, 0);
-    const siScale = parameters.field.size/20;
+    const siScale = parameters.field.size / 20;
     this.sunIndicator.scale.set(siScale, siScale, siScale);
 
     this.diffuseLight.setCount(
