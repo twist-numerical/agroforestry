@@ -1,5 +1,7 @@
 import {
+  ArrowHelper,
   Color,
+  CylinderGeometry,
   DoubleSide,
   Group,
   Matrix4,
@@ -116,8 +118,10 @@ export default class FieldManager {
     this.camera.matrixAutoUpdate = false;
 
     this.sunlight.lookAt(new Vector3(1, 0, 0));
-    this.sunIndicator.position.set(-20, 0, 0);
     this.sun.add(this.sunlight);
+    this.sunIndicator.add(
+      new ArrowHelper(new Vector3(1, 0, 0), new Vector3(0, 0, 0), 3, "red")
+    );
     this.sun.add(this.sunIndicator);
 
     this.scene.add(this.field, this.camera, this.sun, this.compass);
@@ -203,13 +207,19 @@ export default class FieldManager {
     this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
     this.sunlight.setViewSize(1.5 * parameters.field.size);
     this.sunlight.setRenderSize(renderSize);
+    this.sunIndicator.position.set(-parameters.field.size, 0, 0);
+    const siScale = parameters.field.size/20;
+    this.sunIndicator.scale.set(siScale, siScale, siScale);
 
     this.diffuseLight.setCount(
       getOrDefault(parameters.sensors.diffuseLightCount, 13)
     );
     this.diffuseLight.setViewSize(1.5 * parameters.field.size);
     this.diffuseLight.setRenderSize(renderSize);
-    this.diffuseLightIndicator.setLight(this.diffuseLight);
+    this.diffuseLightIndicator.setLight(
+      this.diffuseLight,
+      parameters.field.size * 0.8
+    );
 
     while (this.trees.length) {
       this.trees.pop().dispose();
