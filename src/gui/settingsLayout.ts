@@ -212,7 +212,7 @@ export default function(guiElement: any) {
         value: "leavesPerTwig",
         attributes: {
           min: 0,
-          max: 30,
+          max: 50,
           precision: 0,
         },
       },
