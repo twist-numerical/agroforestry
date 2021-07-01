@@ -8,6 +8,8 @@ import birch_young_file from "./birch_young.csv";
 import oak_medium_file from "./oak_medium.csv";
 import oak_old_file from "./oak_old.csv";
 import oak_young_file from "./oak_young.csv";
+import birch_medium_alternative_file from "./birch_medium_alternative.csv";
+import alder_young_alternative_file from "./alder_young_alternative.csv";
 
 export type TreeSegment = { start: Vector3; end: Vector3; radius: number };
 export type TreeData = { segments: TreeSegment[]; height: number };
@@ -54,6 +56,8 @@ const trees: { [key: string]: () => Promise<TreeData> } = {
   oak_medium: register_tree(oak_medium_file),
   oak_old: register_tree(oak_old_file),
   oak_young: register_tree(oak_young_file),
+  alder_young_alternative: register_tree(alder_young_alternative_file),
+  birch_medium_alternative: register_tree(birch_medium_alternative_file),
 };
 
 export default function getTreeData(type: string): Promise<TreeData> {
