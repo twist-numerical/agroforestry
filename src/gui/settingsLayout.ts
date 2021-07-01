@@ -187,6 +187,8 @@ export default function(guiElement: any) {
           { name: "Oak young", value: "oak_young" },
           { name: "Oak medium", value: "oak_medium" },
           { name: "Oak old", value: "oak_old" },
+	  { name: "Alder young alternative", value: "alder_young_alternative" },
+	  { name: "Birch medium alternative", value: "birch_medium_alternative" },
         ],
       },
       {
