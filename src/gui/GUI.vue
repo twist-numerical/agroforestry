@@ -25,14 +25,6 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
             @click="() => update()") Update
       div.container-fluid.h-100.overflow-y-auto
         h1 Agroforestry
-
-        div.form-group
-          label.input-group.row(v-for="setting of settingsLayout.main")
-            div.col-4.col-form-label.col-form-label-sm.text-right {{setting.name}}
-            div.col-8.input-group-sm
-              number-input.form-control(
-                v-bind="setting.attributes"
-                v-model="settings[setting.value]")
         
         h2 Field
 
@@ -201,12 +193,6 @@ export default {
       updated: true,
       errorMessage: "",
       showErrorMessage: false,
-      settings: {
-        latitude: 53,
-        timeOfDay: 12,
-        day: 180,
-        leafGrowth: 0.7,
-      },
       field: field,
       changedField: clone(field),
       settingsLayout: settingsLayout(this),

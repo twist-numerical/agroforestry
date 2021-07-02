@@ -31,7 +31,6 @@ function d2r(d: number): number {
 }
 
 export type RenderSettings = {
-  latitude?: number;
   seconds?: number;
   leafGrowth?: number;
   leafWidth?: number;

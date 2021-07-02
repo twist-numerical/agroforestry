@@ -1,54 +1,84 @@
 <template lang="pug">
-div.position-relative
-  div.calculate-light.col-6.no-gutter.p-3(
-        @drop.prevent="onDrop"
-        @dragenter.prevent="onDrop"
-        @dragover.prevent="onDrop"
-      )
-    div.row
-      div.col-6
-        h5.pt-1 Leaf growth
-      div.col-6
-        UploadFile.btn.btn-link(@file="uploadLeafGrowth", accept="*") 
-          | Import
+.position-relative
+  .calculate-light(
+    @drop.prevent="onDrop",
+    @dragenter.prevent="onDrop",
+    @dragover.prevent="onDrop"
+  )
+    accordion.card.w-100(
+      :items="[ { slot: 'singlemoment', title: 'Single moment' }, { slot: 'fullyear', title: 'Full year' }, ]"
+    )
+      template(v-slot:title="{ item }")
+        .card-header.w-100 {{ item.title }}
+      template(v-slot:singlemoment="")
+        .card-body.w-100
+          .form-group
+            label.input-group.row(v-for="setting of settingsLayout")
+              .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+              .col-8.input-group-sm
+                number-input.form-control(
+                  v-bind="setting.attributes",
+                  v-model="settings[setting.value]"
+                )
 
-    div.row.mb-3
-      div.col-12
-        leaf-graph(
-            :values="leafGrowth"
-            :ymin="-0.05"
-            :ymax="1.05"
-            :aspectRatio="0.3"
-            width="100%")
-          rect.summer(
-              width="0.25"
-              height="0.3"
-              x="0.5"
-              y="0"
-              
-          )
-          text(
-              x="0.5"
-              y="0.28"
-              textLength="0.25"
-              lengthAdjust="spacingAndGlyphs"
-              style="font-size: 0.05pt; text-anchor: bottom; fill: white"
-          ) {{String.fromCharCode(160)}}summer{{String.fromCharCode(160)}}
-          template(v-slot:overlay="")
-            rect.progress(
-                v-if="active"
-                :width="1-progress"
-                height="0.3"
-                :x="progress"
-                y="0"
-            )
+          .row
+            .col-4.text-center
+              button.btn.btn-link(
+                type="button",
+                v-show="active",
+                @click="abort"
+              ) Abort
+            .col-8.text-center
+              button.btn.btn-primary(
+                type="button",
+                :disabled="active",
+                @click="calculateMoment"
+              ) Calculate moment
+      template(v-slot:fullyear="")
+        .card-body.w-100
+          UploadFile.btn.btn-link(@file="uploadLeafGrowth", accept="*") 
+            | Import
 
-    div.row
-      div.col-4.text-center
-        button.btn.btn-link(type="button" v-show="active" @click="abort") Abort
-      div.col-8.text-center
-        button.btn.btn-primary(type="button" :disabled="active" @click="calculateLight") Calculate light
-  canvas(ref="canvas" :key="`canvas-${canvasID}`")
+          .row.mb-3
+            .col-12
+              leaf-graph(
+                :values="leafGrowth",
+                :ymin="-0.05",
+                :ymax="1.05",
+                :aspectRatio="0.3",
+                width="100%"
+              )
+                rect.summer(width="0.25", height="0.3", x="0.5", y="0")
+                text(
+                  x="0.5",
+                  y="0.28",
+                  textLength="0.25",
+                  lengthAdjust="spacingAndGlyphs",
+                  style="font-size: 0.05pt; text-anchor: bottom; fill: white"
+                ) {{ String.fromCharCode(160) }}summer{{ String.fromCharCode(160) }}
+                template(v-slot:overlay="")
+                  rect.progress(
+                    v-if="active",
+                    :width="1 - progress",
+                    height="0.3",
+                    :x="progress",
+                    y="0"
+                  )
+
+          .row
+            .col-4.text-center
+              button.btn.btn-link(
+                type="button",
+                v-show="active",
+                @click="abort"
+              ) Abort
+            .col-8.text-center
+              button.btn.btn-primary(
+                type="button",
+                :disabled="active",
+                @click="calculateYear"
+              ) Calculate year
+  canvas(ref="canvas", :key="`canvas-${canvasID}`")
 </template>
 
 <script lang="ts">
@@ -60,6 +90,8 @@ import LeafGraph from "./LeafGraph.vue";
 import UploadFile from "./UploadFile.vue";
 import { saveAs } from "file-saver";
 import { clamp, map, range } from "../util";
+import Accordion from "./Accordion.vue";
+import NumberInput from "./NumberInput.vue";
 
 function rafPromise(): Promise<void> {
   let _resolve: () => void;
@@ -77,14 +109,12 @@ export default {
   components: {
     LeafGraph,
     UploadFile,
+    Accordion,
+    NumberInput,
   },
   props: {
     stats: {
       type: Statistics,
-    },
-    settings: {
-      type: Object,
-      default: () => {},
     },
     field: {
       type: Object,
@@ -99,6 +129,38 @@ export default {
       active: false,
       progress: 0,
       canvasID: 0,
+      settings: {
+        timeOfDay: 12,
+        day: 180,
+        leafGrowth: 0.7,
+      },
+      settingsLayout: [
+        {
+          name: "Time of day",
+          value: "timeOfDay",
+          attributes: {
+            min: 0,
+            max: 24,
+          },
+        },
+        {
+          name: "Day",
+          value: "day",
+          attributes: {
+            precision: 0,
+            min: 0,
+            max: 366,
+          },
+        },
+        {
+          name: "Leaf growth",
+          value: "leafGrowth",
+          attributes: {
+            min: 0,
+            max: 1,
+          },
+        },
+      ],
     };
   },
 
@@ -190,7 +252,51 @@ export default {
         this.$nextTick(() => this.initWorker(), 100);
       }
     },
-    async calculateLight() {
+    async calculateYear() {
+      this.active = true;
+      const messageEvent = await this.worker.onReply(
+        this.worker.postMessage({
+          type: "year",
+          leafGrowth: this.leafGrowth,
+          stepSize: this.field.sensors.timeStepSize * 60,
+        })
+      );
+      this.active = false;
+
+      console.log(messageEvent);
+
+      saveAs(
+        new Blob(
+          messageEvent.data.sunlight.map(
+            ([day, time, row], index: number) =>
+              `${day}, ${time}, ${row
+                .map((v) => (index == 0 ? v : v.toPrecision(8)))
+                .join(",")}\n`
+          ),
+          {
+            type: "text/csv",
+          }
+        ),
+        "sunlight.csv"
+      );
+
+      saveAs(
+        new Blob(
+          messageEvent.data.diffuseLight.map(
+            ([time, row], index: number) =>
+              `${time}, ${row
+                .map((v) => (index == 0 ? v : v.toPrecision(8)))
+                .join(",")}\n`
+          ),
+          {
+            type: "text/csv",
+          }
+        ),
+        "diffuse_light.csv"
+      );
+    },
+    async calculateMoment() {
+      // Todo
       this.active = true;
       const messageEvent = await this.worker.onReply(
         this.worker.postMessage({
@@ -291,7 +397,7 @@ canvas {
   position: absolute;
   right: 0;
   bottom: 0;
-  background: white;
+  width: 50%;
 }
 
 .summer {

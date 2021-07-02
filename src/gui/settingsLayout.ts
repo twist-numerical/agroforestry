@@ -2,33 +2,6 @@ import * as math from "mathjs";
 
 export default function(guiElement: any) {
   return {
-    main: [
-      {
-        name: "Time of day",
-        value: "timeOfDay",
-        attributes: {
-          min: 0,
-          max: 24,
-        },
-      },
-      {
-        name: "Day",
-        value: "day",
-        attributes: {
-          precision: 0,
-          min: 0,
-          max: 366,
-        },
-      },
-      {
-        name: "Leaf growth",
-        value: "leafGrowth",
-        attributes: {
-          min: 0,
-          max: 1,
-        },
-      },
-    ],
     sensors: [
       {
         name: "Size",
