@@ -262,7 +262,7 @@ export default class FieldManager {
     return plane.distanceToPoint(target) < 0;
   }
 
-  calculateLight(
+  calculateYear(
     stepSize: number,
     leafGrowth: number[],
     settings: RenderSettings = {}
@@ -295,6 +295,33 @@ export default class FieldManager {
       this.progress("Calculating light", day / 356);
     }
     return [sunlight, diffuseLight];
+  }
+
+  calculateMoment(
+    time: number,
+    day: number,
+    leafGrowth: number,
+    settings: RenderSettings = {}
+  ) {
+    const data: any = [
+      [`${day}d:${time}h - ${leafGrowth.toFixed(1)}%`, ...this.sensors.names],
+    ];
+    data.push(["sunlight"]);
+    data.push(["diffuse light"]);
+    this.progress("Calculating light", 0);
+
+    this.sun.setSeconds(60 * 60 * (24 * day + time));
+    this.setSettings(settings);
+    this.setGrowth(leafGrowth);
+    this.indicatorsVisible = false;
+
+    data[1].push(...this.photosynthesis.calculate(this.scene, [this.sunlight]));
+
+    data[2].push(
+      ...this.photosynthesis.calculate(this.scene, [this.diffuseLight])
+    );
+
+    return data;
   }
 
   set indicatorsVisible(visible: boolean) {

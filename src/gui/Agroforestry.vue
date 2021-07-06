@@ -18,7 +18,7 @@
               .col-8.input-group-sm
                 number-input.form-control(
                   v-bind="setting.attributes",
-                  v-model="settings[setting.value]"
+                  v-model="momentSettings[setting.value]"
                 )
 
           .row
@@ -36,13 +36,23 @@
               ) Calculate moment
       template(v-slot:fullyear="")
         .card-body.w-100
-          UploadFile.btn.btn-link(@file="uploadLeafGrowth", accept="*") 
-            | Import
+          label.input-group.row
+            .col-4.col-form-label.col-form-label-sm.text-right Time step (min)
+            .col-8.input-group-sm
+              number-input.form-control(
+                :min="15",
+                :max="60 * 12",
+                :precision="0",
+                v-model="yearSettings.timeStep"
+              )
 
           .row.mb-3
+            .col-6
+              UploadFile.btn.btn-link(@file="uploadLeafGrowth", accept="*") 
+                | Import
             .col-12
               leaf-graph(
-                :values="leafGrowth",
+                :values="yearSettings.leafGrowth",
                 :ymin="-0.05",
                 :ymax="1.05",
                 :aspectRatio="0.3",
@@ -123,16 +133,19 @@ export default {
 
   data() {
     return {
-      leafGrowth: [...range(0, 366)].map(
-        (i) => 0.5 - 0.5 * Math.cos((i * 2 * Math.PI) / 366)
-      ),
       active: false,
       progress: 0,
       canvasID: 0,
-      settings: {
+      momentSettings: {
         timeOfDay: 12,
         day: 180,
         leafGrowth: 0.7,
+      },
+      yearSettings: {
+        timeStep: 120,
+        leafGrowth: [...range(0, 366)].map(
+          (i) => 0.5 - 0.5 * Math.cos((i * 2 * Math.PI) / 366)
+        ),
       },
       settingsLayout: [
         {
@@ -187,14 +200,14 @@ export default {
 
   methods: {
     render() {
-      const day = getOrDefault(this.settings.day, 0);
-      const time = getOrDefault(this.settings.timeOfDay, 12);
+      const day = getOrDefault(this.momentSettings.day, 0);
+      const time = getOrDefault(this.momentSettings.timeOfDay, 12);
       const seconds = (day * 24 + time) * 60 * 60;
 
       return this.worker.onReply(
         this.worker.postMessage({
           type: "render",
-          leafGrowth: getOrDefault(this.settings.leafGrowth, 0.5),
+          leafGrowth: getOrDefault(this.momentSettings.leafGrowth, 0.5),
           seconds: seconds,
           camera: this.camera.matrix.toArray(),
         })
@@ -257,8 +270,8 @@ export default {
       const messageEvent = await this.worker.onReply(
         this.worker.postMessage({
           type: "year",
-          leafGrowth: this.leafGrowth,
-          stepSize: this.field.sensors.timeStepSize * 60,
+          leafGrowth: this.yearSettings.leafGrowth,
+          stepSize: this.yearSettings.timeStep * 60,
         })
       );
       this.active = false;
@@ -296,14 +309,15 @@ export default {
       );
     },
     async calculateMoment() {
-      // Todo
       this.active = true;
+      const message = {
+        type: "moment",
+        day: this.momentSettings.day,
+        time: this.momentSettings.timeOfDay,
+        leafGrowth: this.momentSettings.leafGrowth,
+      };
       const messageEvent = await this.worker.onReply(
-        this.worker.postMessage({
-          type: "light",
-          leafGrowth: this.leafGrowth,
-          stepSize: this.field.sensors.timeStepSize * 60,
-        })
+        this.worker.postMessage(message)
       );
       this.active = false;
 
@@ -311,9 +325,9 @@ export default {
 
       saveAs(
         new Blob(
-          messageEvent.data.sunlight.map(
-            ([day, time, row], index: number) =>
-              `${day}, ${time}, ${row
+          messageEvent.data.data.map(
+            ([t, ...row], index: number) =>
+              `${t}, ${row
                 .map((v) => (index == 0 ? v : v.toPrecision(8)))
                 .join(",")}\n`
           ),
@@ -321,22 +335,9 @@ export default {
             type: "text/csv",
           }
         ),
-        "sunlight.csv"
-      );
-
-      saveAs(
-        new Blob(
-          messageEvent.data.diffuseLight.map(
-            ([time, row], index: number) =>
-              `${time}, ${row
-                .map((v) => (index == 0 ? v : v.toPrecision(8)))
-                .join(",")}\n`
-          ),
-          {
-            type: "text/csv",
-          }
-        ),
-        "diffuse_light.csv"
+        `moment_${message.day.toFixed(0)}_${message.time.toFixed(0)}_${(
+          100 * message.leafGrowth
+        ).toFixed(0)}.csv`
       );
     },
     uploadLeafGrowth(file: File) {

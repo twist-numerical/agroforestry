@@ -13,7 +13,7 @@ export default {
   },
   data() {
     return {
-      selected: 2,
+      selected: 0,
     };
   },
   mounted() {

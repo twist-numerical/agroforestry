@@ -104,7 +104,6 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
       agroforestry(
         ref="agroforestry"
         :stats="statistics"
-        :settings="settings"
         :field="field"
       )
 </template>
@@ -151,7 +150,6 @@ export default {
         size: [16, 16],
         count: [4, 4],
         renderSize: 1024,
-        timeStepSize: 120,
         diffuseLightCount: 21,
       },
       trees: [

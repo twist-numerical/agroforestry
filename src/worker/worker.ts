@@ -41,16 +41,28 @@ const messages = {
       type: "renderDone",
     });
   },
-  light(message: any) {
-    const [sunlight, diffuseLight] = requireManager().calculateLight(
+  year(message: any) {
+    const [sunlight, diffuseLight] = requireManager().calculateYear(
       message.stepSize,
-      message.leafGrowth,
+      message.leafGrowth
     );
 
     messageHandler.reply(message, {
-      type: "lightDone",
+      type: "yearDone",
       sunlight,
       diffuseLight,
+    });
+  },
+  moment(message: any) {
+    const data = requireManager().calculateMoment(
+      message.time,
+      message.day,
+      message.leafGrowth
+    );
+
+    messageHandler.reply(message, {
+      type: "momentDone",
+      data,
     });
   },
 };
