@@ -352,7 +352,7 @@ export default {
           while ((match = dataRegex.exec(result)) && leafGrowth.length < 366)
             leafGrowth.push(+match[0]);
           while (leafGrowth.length < 366) leafGrowth.push(0.5);
-          this.leafGrowth = leafGrowth;
+          this.yearSettings.leafGrowth = leafGrowth;
         } catch (e) {
           console.error(e);
         }
