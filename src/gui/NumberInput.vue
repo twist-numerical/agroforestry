@@ -1,11 +1,13 @@
 <template lang="pug">
-  input.number-input.form-control(
-    :class="{invalid: !valid}"
-    inputmode="numeric"
-    v-model="rawValue"
-    @mousemove="mousemove"
-    @change="evaluate"
-    :style="{'--number-input-value': `${100*ratio}%`}")
+input.number-input.form-control(
+  ref="numberInput",
+  :class="{ invalid: !valid }",
+  inputmode="numeric",
+  v-model="rawValue",
+  @mousedown="mousedown",
+  @change="evaluate",
+  :style="{ '--number-input-value': `${100 * ratio}%` }"
+)
 </template>
 
 <script lang="ts">
@@ -41,14 +43,16 @@ export default {
     },
     convertToFloat: {
       type: Function,
-      default: function(k: number) {
+      default: function (k: number) {
         return (k - this.min) / (this.max - this.min);
       },
     },
     convertFromFloat: {
       type: Function,
-      default: function(value: number) {
-        return +(this.min + (this.max - this.min) * value).toFixed(this.precision);
+      default: function (value: number) {
+        return +(this.min + (this.max - this.min) * value).toFixed(
+          this.precision
+        );
       },
     },
     parse: {
@@ -58,6 +62,33 @@ export default {
   },
   created() {
     this.evaluationID = 0;
+    this.interacting = false;
+
+    this.mousemove = (e: MouseEvent) => {
+      if (this.interacting) {
+        if (!e.buttons) {
+          this.interacting = false;
+          return;
+        }
+        const target = this.$refs.numberInput;
+        var x = e.clientX - target.getBoundingClientRect().left; //x position within the element.
+        this.rawValue = this.convertFromFloat(
+          clamp(x / target.clientWidth, 0, 1)
+        );
+        e.preventDefault();
+      }
+    };
+    this.mouseup = () => {
+      this.interacting = false;
+    };
+  },
+  mounted() {
+    window.document.body.addEventListener("mousemove", this.mousemove);
+    window.document.body.addEventListener("mouseup", this.mouseup);
+  },
+  destroyed() {
+    window.document.body.removeEventListener("mousemove", this.mousemove);
+    window.document.body.removeEventListener("mouseup", this.mouseup);
   },
   data() {
     return {
@@ -95,15 +126,8 @@ export default {
     evaluate() {
       this.rawValue = this.inputValue;
     },
-    mousemove(e: MouseEvent) {
-      if (e.buttons) {
-        const target = e.target as HTMLInputElement;
-        var x = e.clientX - target.getBoundingClientRect().left; //x position within the element.
-        this.rawValue = this.convertFromFloat(
-          clamp(x / target.clientWidth, 0, 1)
-        );
-        e.preventDefault();
-      }
+    mousedown() {
+      this.interacting = true;
     },
   },
 };
