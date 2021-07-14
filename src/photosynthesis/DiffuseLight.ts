@@ -1,4 +1,5 @@
 import {
+  Matrix3,
   Matrix4,
   OrthographicCamera,
   Scene,
@@ -9,6 +10,7 @@ import {
 import * as THREE from "three";
 import UVLight from "./UVLight";
 import Photosynthesis from "./Photosynthesis";
+import { clamp } from "../util";
 
 const eye = new Vector3(0, 1, 0);
 const center = new Vector3(0, 0, 0);
@@ -67,10 +69,28 @@ export default class DiffuseLight extends UVLight {
         Math.sin(lon) * Math.cos(lat)
       );
       this.sensors.push({
-        power: (1 + 2 * Math.sin(lat)) / 3, // Standard Overcast Sky
+        power: 0,
         transform: new Matrix4().lookAt(eye, center, up),
       });
     }
+    this.recalculatePower();
+  }
+
+  recalculatePower() {
+    const tmp = new Vector3();
+    this.updateWorldMatrix(true, true);
+    const world = new Matrix3().setFromMatrix4(this.matrixWorld);
+    this.sensors.forEach((sensor) => {
+      const lat =
+        Math.PI / 2 -
+        tmp
+          .set(0, 0, 1)
+          .applyMatrix4(sensor.transform)
+          .applyMatrix3(world)
+          .angleTo(up);
+      sensor.power = clamp((1 + 2 * Math.sin(lat)) / 3, 0, 1); // Standard Overcast Sky
+      debugger;
+    });
   }
 
   render(
