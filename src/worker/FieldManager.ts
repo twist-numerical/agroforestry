@@ -13,18 +13,20 @@ import {
   PlaneGeometry,
   Scene,
   SphereGeometry,
+  Texture,
   Vector3,
   WebGLRenderer,
 } from "three";
 import { constant, map, range } from "../util";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
-import LidarTree from "../tree/LidarTree";
+import LidarTree, { TreeParameters } from "../tree/LidarTree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
+import LeafDensity from "../tree/DensityCalculator";
 
 function d2r(d: number): number {
   return (d * Math.PI) / 180;
@@ -102,9 +104,11 @@ export default class FieldManager {
   width: number = 300;
   height: number = 300;
   progress: (message: string, value: number) => void;
-  drawViewOfSun: () => void;
+  drawTexture: (texture: Texture) => void;
   trees: LidarTree[] = [];
   treeGroup = new Group();
+  leafDensity: LeafDensity;
+  parameters: FieldParameters;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -113,6 +117,7 @@ export default class FieldManager {
     this.progress = progress;
     this.renderer = new WebGLRenderer({ canvas });
     this.photosynthesis = new Photosynthesis(this.renderer);
+    this.leafDensity = new LeafDensity(this.renderer);
     this.field.add(this.ground);
     this.camera.matrixAutoUpdate = false;
 
@@ -127,7 +132,7 @@ export default class FieldManager {
 
     this.diffuseLight.add(this.diffuseLightIndicator);
 
-    this.drawViewOfSun = (() => {
+    this.drawTexture = (() => {
       const scene = new Scene();
       const planeMaterial = new MeshBasicMaterial();
       const plane = new Mesh(new PlaneGeometry(2, 2), planeMaterial);
@@ -135,14 +140,16 @@ export default class FieldManager {
       scene.add(plane);
       const camera = new OrthographicCamera(-1, 1, -1, 1, -1, 1);
       camera.lookAt(0, 0, 1);
-      return () => {
-        planeMaterial.map = this.sunlight.target.texture;
-        //    if (this.photosynthesis.summaryTarget) {
-        //  planeMaterial.map = this.photosynthesis.summaryTarget.texture;
-        this.photosynthesis.calculate(this.scene, [this.diffuseLight]);
-        // planeMaterial.map = this.diffuseLight.target.texture;
+      return (texture: Texture) => {
+        this.indicatorsVisible = false;
+
+        const size = 400;
+        this.renderer.setScissor(0, 0, size, size);
+        this.renderer.setViewport(0, 0, size, size);
+
+        planeMaterial.map = texture;
+        this.renderer.setScissorTest(true);
         this.renderer.render(scene, camera);
-        //  }
       };
     })();
   }
@@ -168,6 +175,7 @@ export default class FieldManager {
   }
 
   loadField(parameters: FieldParameters) {
+    this.parameters = parameters;
     const rotation = d2r(parameters.field.rotation) || 0;
     const fieldSize = parameters.field.size;
     this.field.rotation.set(0, rotation, 0);
@@ -262,6 +270,18 @@ export default class FieldManager {
     return plane.distanceToPoint(target) < 0;
   }
 
+  async calculateLeafDensity(
+    treeParameters: TreeParameters
+  ): Promise<number[]> {
+    return this.leafDensity.calculate({
+      leaves:
+        treeParameters.leavesPerTwig !== undefined ||
+        treeParameters.leafLength !== undefined ||
+        treeParameters.leafWidth !== undefined,
+      ...treeParameters,
+    });
+  }
+
   calculateYear(
     stepSize: number,
     leafGrowth: number[],
@@ -344,14 +364,14 @@ export default class FieldManager {
     this.renderer.setViewport(0, 0, this.width, this.height);
     this.renderer.render(this.scene, this.camera);
 
-    /* {
+    /*{
       this.indicatorsVisible = false;
-      this.photosynthesis.calculate(this.scene, [this.sunlight]),
-        this.renderer.setScissorTest(true);
-      const size = 300;
-      this.renderer.setScissor(0, 0, size, size);
-      this.renderer.setViewport(0, 0, size, size);
-      this.drawViewOfSun();
-    } */
+      this.photosynthesis.calculate(this.scene, [this.sunlight]);
+
+      this.drawTexture(this.sunlight.target.texture);
+    }*/
+    /*{
+      this.drawTexture(this.leafDensity.target.texture);
+    }*/
   }
 }

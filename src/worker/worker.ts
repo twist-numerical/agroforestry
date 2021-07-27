@@ -1,10 +1,6 @@
 import MessageHandler from "./MessageHandler";
 import FieldManager from "./FieldManager";
 
-function sleep(time: number) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-
 const messageHandler = new MessageHandler((self as any) as Worker);
 
 function progress(message: string, value: number) {
@@ -63,6 +59,14 @@ const messages = {
     messageHandler.reply(message, {
       type: "momentDone",
       data,
+    });
+  },
+  async leafDensity(message: any) {
+    messageHandler.reply(message, {
+      type: "leafDensityDone",
+      density: await requireManager().calculateLeafDensity(
+        message.tree
+      ),
     });
   },
 };

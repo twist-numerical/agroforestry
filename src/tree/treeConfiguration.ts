@@ -1,14 +1,25 @@
 import { Vector3 } from "three";
+//@ts-ignore
 import alder_medium_file from "./alder_medium.csv";
+//@ts-ignore
 import alder_old_file from "./alder_old.csv";
+//@ts-ignore
 import alder_young_file from "./alder_young.csv";
+//@ts-ignore
 import birch_medium_file from "./birch_medium.csv";
+//@ts-ignore
 import birch_old_file from "./birch_old.csv";
+//@ts-ignore
 import birch_young_file from "./birch_young.csv";
+//@ts-ignore
 import oak_medium_file from "./oak_medium.csv";
+//@ts-ignore
 import oak_old_file from "./oak_old.csv";
+//@ts-ignore
 import oak_young_file from "./oak_young.csv";
+//@ts-ignore
 import birch_medium_alternative_file from "./birch_medium_alternative.csv";
+//@ts-ignore
 import alder_young_alternative_file from "./alder_young_alternative.csv";
 
 export type TreeSegment = { start: Vector3; end: Vector3; radius: number };
@@ -26,7 +37,7 @@ function register_tree(segmentFile: string): () => Promise<TreeData> {
 
       const offset = new Vector3(lidar[3], lidar[5], lidar[4]);
       const segments: TreeSegment[] = [];
-      for (let i = 0; i < lidar.length; i += 7) {
+      for (let i = 0; i + 6 < lidar.length; i += 7) {
         segments.push({
           start: new Vector3(lidar[i + 0], lidar[i + 2], lidar[i + 1]).sub(
             offset

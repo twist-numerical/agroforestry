@@ -89,7 +89,6 @@ export default class DiffuseLight extends UVLight {
           .applyMatrix3(world)
           .angleTo(up);
       sensor.power = clamp((1 + 2 * Math.sin(lat)) / 3, 0, 1); // Standard Overcast Sky
-      debugger;
     });
   }
 

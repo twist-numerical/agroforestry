@@ -122,6 +122,7 @@ export default function(guiElement: any) {
       {
         name: "Scale",
         value: "scale",
+        invalidateTree: true,
         attributes: {
           min: 0.5,
           max: 2,
@@ -140,6 +141,7 @@ export default function(guiElement: any) {
       {
         name: "Type",
         value: "type",
+        invalidateTree: true,
         type: "select",
         options: [
           { name: "Alder young", value: "alder_young" },
@@ -151,13 +153,17 @@ export default function(guiElement: any) {
           { name: "Oak young", value: "oak_young" },
           { name: "Oak medium", value: "oak_medium" },
           { name: "Oak old", value: "oak_old" },
-	  { name: "Alder young alternative", value: "alder_young_alternative" },
-	  { name: "Birch medium alternative", value: "birch_medium_alternative" },
+          { name: "Alder young alternative", value: "alder_young_alternative" },
+          {
+            name: "Birch medium alternative",
+            value: "birch_medium_alternative",
+          },
         ],
       },
       {
         name: "Leaf length",
         value: "leafLength",
+        invalidateTree: true,
         attributes: {
           min: 0,
           max: 1,
@@ -166,6 +172,7 @@ export default function(guiElement: any) {
       {
         name: "Leaf width",
         value: "leafWidth",
+        invalidateTree: true,
         attributes: {
           min: 0,
           max: 1,
@@ -174,6 +181,7 @@ export default function(guiElement: any) {
       {
         name: "Leaves per twig",
         value: "leavesPerTwig",
+        invalidateTree: true,
         attributes: {
           min: 0,
           max: 50,
@@ -183,6 +191,7 @@ export default function(guiElement: any) {
       {
         name: "Max twig radius",
         value: "maxTwigRadius",
+        invalidateTree: true,
         attributes: {
           min: 0,
           max: 0.5,

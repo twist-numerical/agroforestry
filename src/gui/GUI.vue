@@ -1,90 +1,117 @@
 <template lang="pug">
-div.gui.h-100.p-0.position-relative.overflow-hidden
-  div.error-message(:class="{visible: showErrorMessage}")
-    div.error-message-text.alert.alert-danger
+.gui.h-100.p-0.position-relative.overflow-hidden
+  .error-message(:class="{ visible: showErrorMessage }")
+    .error-message-text.alert.alert-danger
       | {{ errorMessage }}
 
-  div.row.h-100.no-gutters
+  .row.h-100.no-gutters
     form.col-5.h-100.position-relative.gui-padding-bottom(
-        @drop.prevent="onDrop"
-        @dragenter.prevent="onDrop"
-        @dragover.prevent="onDrop"
-      )
-      div.update-panel.p-3.pt-0.row
-        div.col-4.text-center
+      @drop.prevent="onDrop",
+      @dragenter.prevent="onDrop",
+      @dragover.prevent="onDrop"
+    )
+      .update-panel.p-3.pt-0.row
+        .col-4.text-center
           upload-file.btn.btn-link(@file="upload", accept=".json") 
             | Import
-        div.col-4.text-center
-          button.btn.btn-link(
-            type="button"
-            @click="() => download()") Export
-        div.col-4.text-center
+        .col-4.text-center
+          button.btn.btn-link(type="button", @click="() => download()") Export
+        .col-4.text-center
           button.btn.btn-primary.btn-lg(
-            type="button"
-            :disabled="updated"
-            @click="() => update()") Update
-      div.container-fluid.h-100.overflow-y-auto
+            type="button",
+            :disabled="updated",
+            @click="() => update()"
+          ) Update
+      .container-fluid.h-100.overflow-y-auto
         h1 Agroforestry
-        
+
         h2 Field
 
-        div.form-group
+        .form-group
           label.row(v-for="setting of settingsLayout.field")
-            div.col-4.col-form-label.col-form-label-sm.text-right {{setting.name}}
-            div.col-8.input-group-sm
+            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+            .col-8.input-group-sm
               number-input.form-control(
-                v-bind="setting.attributes"
-                v-model="changedField.field[setting.value]"
-                @input="invalidate")
-        
+                v-bind="setting.attributes",
+                v-model="changedField.field[setting.value]",
+                @input="invalidate"
+              )
+
         h2 Sensors
 
-        div.form-group
+        .form-group
           label.row(v-for="setting of settingsLayout.sensors")
-            div.col-4.col-form-label.col-form-label-sm.text-right {{setting.name}}
-            div.col-8.input-group-sm
+            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+            .col-8.input-group-sm
               coordinate-input.input-group-sm(
-                v-if="setting.type == 'coordinate'"
-                v-bind="setting.attributes"
-                v-model="changedField.sensors[setting.value]"
-                @input="invalidate")
+                v-if="setting.type == 'coordinate'",
+                v-bind="setting.attributes",
+                v-model="changedField.sensors[setting.value]",
+                @input="invalidate"
+              )
               number-input.form-control(
-                v-else
-                v-bind="setting.attributes"
-                v-model="changedField.sensors[setting.value]"
-                @input="invalidate")
+                v-else,
+                v-bind="setting.attributes",
+                v-model="changedField.sensors[setting.value]",
+                @input="invalidate"
+              )
 
         h2 Trees
 
-        div.form-group(v-for="(tree, index) of changedField.trees")
+        .form-group(v-for="(tree, index) of changedField.trees")
           label.row(v-for="setting of settingsLayout.tree")
-            div.col-4.col-form-label.col-form-label-sm.text-right {{setting.name}}
-            div.col-8.input-group-sm
+            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+            .col-8.input-group-sm
               coordinate-input.input-group-sm(
-                v-if="setting.type == 'coordinate'"
-                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
-                v-model="tree[setting.value]"
-                @input="invalidate")
+                v-if="setting.type == 'coordinate'",
+                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
+                v-model="tree[setting.value]",
+                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
+              )
               select(
-                v-else-if="setting.type == 'select'"
-                v-model="tree[setting.value]"
-                @input="invalidate")
+                v-else-if="setting.type == 'select'",
+                v-model="tree[setting.value]",
+                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
+              )
                 option(
                   v-for="option of setting.options",
-                  :value="option.value") {{option.name}}
+                  :value="option.value"
+                ) {{ option.name }}
               number-input.form-control(
-                v-else
-                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes"
-                v-model="tree[setting.value]"
-                @input="invalidate")
-          div.clearfix
-            button.float-right.btn.btn-link.btn-sm(type="button" @click="() => { changedField.trees.splice(index, 1); invalidate(); }") Remove
-          div.col-12.float-none
+                v-else,
+                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
+                v-model="tree[setting.value]",
+                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
+              )
+          label.row
+            .col-4.col-form-label.col-form-label-sm.text-right Leaf density
+            .col-8
+              .col-form-label.col-form-label-sm(
+                v-if="tree.leafDensityValues == 'loading'"
+              )
+                | Loading...
+              .col-form-label(v-else-if="!!tree.leafDensityValues")
+                .float-left.text-center(
+                  v-for="(d, i) of tree.leafDensityValues",
+                  :title="`Leaf density by ${Math.round((i * 100) / (tree.leafDensityValues.length - 1))}% growth`",
+                  :style="{ width: `${Math.floor(100 / tree.leafDensityValues.length)}%` }"
+                ) {{ `${(d * 100).toFixed(1)}%` }}
+              button.btn.btn-link(
+                v-else,
+                type="button",
+                @click.preventDefault="() => calculateLeafDensity(tree)"
+              ) Calculate
+          .clearfix
+            button.float-right.btn.btn-link.btn-sm(
+              type="button",
+              @click="() => { changedField.trees.splice(index, 1); invalidate(); }"
+            ) Remove
+          .col-12.float-none
             hr
-        button.btn.btn-link(type="button" @click="() => addTree()") Add new tree
+        button.btn.btn-link(type="button", @click="() => addTree()") Add new tree
 
         hr
-        div.form-group
+        .form-group
           h4 References
           ul
             li
@@ -99,13 +126,8 @@ div.gui.h-100.p-0.position-relative.overflow-hidden
                 | Bioenerg. Res. (2021).
                 | <a href="https://doi.org/10.1007/s12155-021-10250-y">https://doi.org/10.1007/s12155-021-10250-y</a>
 
-
-    div.col-7.h-100.position-relative
-      agroforestry(
-        ref="agroforestry"
-        :stats="statistics"
-        :field="field"
-      )
+    .col-7.h-100.position-relative
+      agroforestry(ref="agroforestry", :stats="statistics", :field="field")
 </template>
 
 <script lang="ts">
@@ -116,6 +138,7 @@ import NumberInput from "./NumberInput.vue";
 import CoordinateInput from "./CoordinateInput.vue";
 import UploadFile from "./UploadFile.vue";
 import { saveAs } from "file-saver";
+import Vue from "vue";
 
 function clone(obj: any) {
   if (obj === null || obj === undefined) return obj;
@@ -165,7 +188,7 @@ export default {
         },
         {
           type: "oak_medium",
-          position: [0,0],
+          position: [0, 0],
           scale: 1,
           rotation: 120,
           leafLength: 0.1,
@@ -200,6 +223,9 @@ export default {
     invalidate() {
       this.updated = false;
     },
+    invalidateTree(tree) {
+      Vue.delete(tree, "leafDensityValues");
+    },
     update() {
       this.updated = true;
       this.field = clone(this.changedField);
@@ -215,6 +241,16 @@ export default {
         maxTwigRadius: 0.05,
       });
       this.invalidate();
+    },
+    async calculateLeafDensity(tree: any) {
+      Vue.set(tree, "leafDensityValues", "loading");
+      const message = {
+        type: "leafDensity",
+        tree: tree,
+      };
+      const worker = this.$refs.agroforestry.worker;
+      const messageEvent = await worker.onReply(worker.postMessage(message));
+      Vue.set(tree, "leafDensityValues", messageEvent.data.density);
     },
     error(message: String, time: number = 5000) {
       this.errorMessage = message;

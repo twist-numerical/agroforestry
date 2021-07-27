@@ -18,11 +18,11 @@ function randomOnSphere(v: Vector3) {
 }
 
 export class LeafMaterial extends RawShaderMaterial {
-  constructor() {
+  constructor(color = new Color("green")) {
     super({
       uniforms: {
         growth: { value: 1.0 },
-        color: { value: new Color("green") },
+        color: { value: color },
       },
       vertexShader: `
   precision highp float;
@@ -77,7 +77,7 @@ export interface Twig {
 }
 
 export default class TreeLeaves extends Mesh {
-  material: RawShaderMaterial;
+  material: LeafMaterial;
 
   constructor(
     twigs: Twig[],
@@ -93,7 +93,9 @@ export default class TreeLeaves extends Mesh {
       new Float32BufferAttribute([0, 0, -0.5, 1, 0.5, 1], 2)
     );
     const material = new LeafMaterial();
-    (material as any).photosynthesisMaterial = new LeafMaterial();
+    (material as any).photosynthesisMaterial = new LeafMaterial(
+      new Color("black")
+    );
     super(geometry, material);
 
     const instances = twigs.length * parameters.leavesPerTwig;
