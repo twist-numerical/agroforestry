@@ -1,4 +1,5 @@
 import {
+  Color,
   CylinderGeometry,
   InstancedMesh,
   Material,
@@ -18,6 +19,7 @@ export type TreeParameters = {
   leavesPerTwig?: number;
   maxTwigRadius?: number;
   scale?: number;
+  leafColor?: Color;
 };
 
 export default class LidarTree extends Object3D {
@@ -39,6 +41,7 @@ export default class LidarTree extends Object3D {
       leavesPerTwig: 5,
       maxTwigRadius: 0.1,
       scale: 1,
+      leafColor: new Color("green"),
       ...parameters,
     };
 
@@ -86,6 +89,7 @@ export default class LidarTree extends Object3D {
               leafLength: parameters.leafLength,
               leafWidth: parameters.leafWidth,
               leavesPerTwig: parameters.leavesPerTwig,
+              leafColor: parameters.leafColor,
             }
           );
           this.leaves.setGrowth(this.growth);

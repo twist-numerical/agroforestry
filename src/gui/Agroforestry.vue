@@ -129,6 +129,9 @@ export default {
     field: {
       type: Object,
     },
+    highlightTree: {
+      type: Number,
+    },
   },
 
   data() {
@@ -210,6 +213,7 @@ export default {
           leafGrowth: getOrDefault(this.momentSettings.leafGrowth, 0.5),
           seconds: seconds,
           camera: this.camera.matrix.toArray(),
+          highlightTrees: this.highlightTree >= 0 ? [this.highlightTree] : [],
         })
       );
     },

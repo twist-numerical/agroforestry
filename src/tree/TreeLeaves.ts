@@ -22,7 +22,7 @@ export class LeafMaterial extends RawShaderMaterial {
     super({
       uniforms: {
         growth: { value: 1.0 },
-        color: { value: color },
+        color: { value: color.clone() },
       },
       vertexShader: `
   precision highp float;
@@ -85,6 +85,7 @@ export default class TreeLeaves extends Mesh {
       leafLength: number;
       leafWidth: number;
       leavesPerTwig: number;
+      leafColor: Color;
     }
   ) {
     const geometry = new InstancedBufferGeometry();
@@ -92,7 +93,7 @@ export default class TreeLeaves extends Mesh {
       "position",
       new Float32BufferAttribute([0, 0, -0.5, 1, 0.5, 1], 2)
     );
-    const material = new LeafMaterial();
+    const material = new LeafMaterial(parameters.leafColor);
     (material as any).photosynthesisMaterial = new LeafMaterial(
       new Color("black")
     );

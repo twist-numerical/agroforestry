@@ -58,7 +58,11 @@
 
         h2 Trees
 
-        .form-group(v-for="(tree, index) of changedField.trees")
+        .form-group(
+          v-for="(tree, index) of changedField.trees",
+          @mouseover="() => { highlightTree = index; }",
+          @mouseout="() => { if (highlightTree == index) highlightTree = -1; }"
+        )
           label.row(v-for="setting of settingsLayout.tree")
             .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
             .col-8.input-group-sm
@@ -127,7 +131,12 @@
                 | <a href="https://doi.org/10.1007/s12155-021-10250-y">https://doi.org/10.1007/s12155-021-10250-y</a>
 
     .col-7.h-100.position-relative
-      agroforestry(ref="agroforestry", :stats="statistics", :field="field")
+      agroforestry(
+        ref="agroforestry",
+        :stats="statistics",
+        :field="field",
+        :highlightTree="highlightTree"
+      )
 </template>
 
 <script lang="ts">
@@ -214,6 +223,7 @@ export default {
       updated: true,
       errorMessage: "",
       showErrorMessage: false,
+      highlightTree: -1,
       field: field,
       changedField: clone(field),
       settingsLayout: settingsLayout(this),
@@ -232,6 +242,7 @@ export default {
     },
     addTree() {
       this.changedField.trees.push({
+        type: "alder_medium",
         position: [0, 0],
         scale: 1,
         rotate: 0,

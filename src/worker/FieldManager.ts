@@ -4,6 +4,7 @@ import {
   CylinderGeometry,
   DoubleSide,
   Group,
+  Material,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -28,6 +29,11 @@ import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
 import LeafDensity from "../tree/DensityCalculator";
 
+const TREE_COLOR = new Color("brown");
+const TREE_COLOR_FADED = TREE_COLOR.clone().multiplyScalar(0.5);
+const LEAF_COLOR = new Color("green");
+const LEAF_COLOR_FADED = LEAF_COLOR.clone().multiplyScalar(0.3);
+
 function d2r(d: number): number {
   return (d * Math.PI) / 180;
 }
@@ -38,6 +44,7 @@ export type RenderSettings = {
   leafWidth?: number;
   leafLength?: number;
   camera?: number[];
+  highlightTrees?: number[];
   display?: {
     diffuseLight?: boolean;
   };
@@ -165,13 +172,34 @@ export default class FieldManager {
     this.camera.updateProjectionMatrix();
   }
 
-  setSettings({ seconds, leafGrowth, camera }: RenderSettings) {
+  highlightTrees(highlight?: number[]) {
+    const [defaultTreeColor, defaultLeafColor] =
+      !highlight || highlight.length == 0
+        ? [TREE_COLOR, LEAF_COLOR]
+        : [TREE_COLOR_FADED, LEAF_COLOR_FADED];
+    this.trees.forEach((tree) => {
+      if (tree.tree)
+        (tree.tree.material as MeshBasicMaterial).color.set(defaultTreeColor);
+      if (tree.leaves) tree.leaves.material.color.set(defaultLeafColor);
+    });
+    if (highlight)
+      highlight.forEach((i) => {
+        const tree = this.trees[i];
+        if (!tree) return;
+        if (tree.tree)
+          (tree.tree.material as MeshBasicMaterial).color.set(TREE_COLOR);
+        if (tree.leaves) tree.leaves.material.color.set(LEAF_COLOR);
+      });
+  }
+
+  setSettings({ seconds, leafGrowth, camera, highlightTrees }: RenderSettings) {
     if (seconds !== undefined) this.sun.setSeconds(seconds);
     if (leafGrowth !== undefined) this.setGrowth(leafGrowth);
     if (camera !== undefined) {
       this.camera.matrix.fromArray(camera);
       this.camera.matrixWorldNeedsUpdate = true;
     }
+    this.highlightTrees(highlightTrees);
   }
 
   loadField(parameters: FieldParameters) {
@@ -233,7 +261,7 @@ export default class FieldManager {
     }
 
     const treeMaterial = new MeshBasicMaterial({
-      color: new Color("brown"),
+      color: TREE_COLOR,
     });
     for (const treeParameters of parameters.trees) {
       const tree = new LidarTree(treeMaterial, {
@@ -241,6 +269,7 @@ export default class FieldManager {
           treeParameters.leavesPerTwig !== undefined ||
           treeParameters.leafLength !== undefined ||
           treeParameters.leafWidth !== undefined,
+        leafColor: LEAF_COLOR,
         ...treeParameters,
       });
       const [x, y] = treeParameters.position;
