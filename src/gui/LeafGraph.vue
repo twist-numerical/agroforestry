@@ -54,6 +54,6 @@ export default Vue.extend({
 @import "./style.scss";
 
 .graph-path {
-  stroke: theme-color(primary);
+  stroke: $primary;
 }
 </style>

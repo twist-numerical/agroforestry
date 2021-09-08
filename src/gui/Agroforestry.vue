@@ -13,7 +13,7 @@
       template(v-slot:singlemoment="")
         .card-body.w-100
           .form-group
-            label.input-group.row(v-for="setting of settingsLayout")
+            label.form-label.input-group.row(v-for="setting of settingsLayout")
               .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
               .col-8.input-group-sm
                 number-input.form-control(
@@ -36,7 +36,7 @@
               ) Calculate moment
       template(v-slot:fullyear="")
         .card-body.w-100
-          label.input-group.row
+          label.form-label.input-group.row
             .col-4.col-form-label.col-form-label-sm.text-right Time step (min)
             .col-8.input-group-sm
               number-input.form-control(
@@ -406,7 +406,7 @@ canvas {
 }
 
 .summer {
-  fill: theme-color(secondary);
+  fill: $secondary;
 }
 
 .progress {

@@ -4,7 +4,7 @@
     .error-message-text.alert.alert-danger
       | {{ errorMessage }}
 
-  .row.h-100.no-gutters
+  .row.h-100.g-0
     form.col-5.h-100.position-relative.gui-padding-bottom(
       @drop.prevent="onDrop",
       @dragenter.prevent="onDrop",
@@ -22,14 +22,14 @@
             :disabled="updated",
             @click="() => update()"
           ) Update
-      .container-fluid.h-100.overflow-y-auto
+      .container-fluid.h-100.overflow-y-auto.px-4
         h1 Agroforestry
 
         h2 Field
 
         .form-group
-          label.row(v-for="setting of settingsLayout.field")
-            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+          label.form-label.row(v-for="setting of settingsLayout.field")
+            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
             .col-8.input-group-sm
               number-input.form-control(
                 v-bind="setting.attributes",
@@ -40,8 +40,8 @@
         h2 Sensors
 
         .form-group
-          label.row(v-for="setting of settingsLayout.sensors")
-            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+          label.form-label.row(v-for="setting of settingsLayout.sensors")
+            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
             .col-8.input-group-sm
               coordinate-input.input-group-sm(
                 v-if="setting.type == 'coordinate'",
@@ -63,8 +63,8 @@
           @mouseover="() => { highlightTree = index; }",
           @mouseout="() => { if (highlightTree == index) highlightTree = -1; }"
         )
-          label.row(v-for="setting of settingsLayout.tree")
-            .col-4.col-form-label.col-form-label-sm.text-right {{ setting.name }}
+          label.form-label.row(v-for="setting of settingsLayout.tree")
+            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
             .col-8.input-group-sm
               coordinate-input.input-group-sm(
                 v-if="setting.type == 'coordinate'",
@@ -72,7 +72,7 @@
                 v-model="tree[setting.value]",
                 @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
               )
-              select(
+              select.form-select(
                 v-else-if="setting.type == 'select'",
                 v-model="tree[setting.value]",
                 @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
@@ -87,26 +87,27 @@
                 v-model="tree[setting.value]",
                 @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
               )
-          label.row
-            .col-4.col-form-label.col-form-label-sm.text-right Leaf density
+          label.form-label.row
+            .col-4.col-form-label.col-form-label-sm.text-end Leaf density
             .col-8
-              .col-form-label.col-form-label-sm(
+              .col-form-label.py-2(
                 v-if="tree.leafDensityValues == 'loading'"
               )
                 | Loading...
-              .col-form-label(v-else-if="!!tree.leafDensityValues")
-                .float-left.text-center(
+              .col-form-label.py-2(v-else-if="!!tree.leafDensityValues")
+                .float-start.text-center(
                   v-for="(d, i) of tree.leafDensityValues",
                   :title="`Leaf density by ${Math.round((i * 100) / (tree.leafDensityValues.length - 1))}% growth`",
                   :style="{ width: `${Math.floor(100 / tree.leafDensityValues.length)}%` }"
                 ) {{ `${(d * 100).toFixed(1)}%` }}
+                .clearfix
               button.btn.btn-link(
                 v-else,
                 type="button",
                 @click.preventDefault="() => calculateLeafDensity(tree)"
               ) Calculate
           .clearfix
-            button.float-right.btn.btn-link.btn-sm(
+            button.float-end.btn.btn-link.btn-sm(
               type="button",
               @click="() => { changedField.trees.splice(index, 1); invalidate(); }"
             ) Remove

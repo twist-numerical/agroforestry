@@ -143,7 +143,7 @@ export default {
   display: block;
   background: linear-gradient(
     90deg,
-    theme-color(secondary) var(--number-input-value),
+    $secondary var(--number-input-value),
     #fff calc(var(--number-input-value) + 0.1%)
   );
 
