@@ -1,11 +1,9 @@
 <template lang="pug">
 div.input-group
-  div.input-group-prepend
-    div.input-group-text x:
+  div.input-group-text x:
   number-input.form-control(
     :precision="precision" :min="xbounds[0]", :max="xbounds[1]", v-model="x")
-  div.input-group-prepend
-    div.input-group-text y:
+  div.input-group-text y:
   number-input.form-control(
     :precision="precision" :min="ybounds[0]", :max="ybounds[1]", v-model="y")
 </template>

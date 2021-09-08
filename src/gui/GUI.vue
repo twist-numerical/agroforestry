@@ -28,33 +28,28 @@
         h2 Field
 
         .form-group
-          label.form-label.row(v-for="setting of settingsLayout.field")
-            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
-            .col-8.input-group-sm
-              number-input.form-control(
-                v-bind="setting.attributes",
-                v-model="changedField.field[setting.value]",
-                @input="invalidate"
-              )
+          gui-setting(
+            v-for="setting of settingsLayout.field",
+            :attributes="setting.attributes",
+            :name="setting.name",
+            :type="setting.type",
+            :info="setting.info",
+            v-model="changedField.field[setting.value]",
+            @input="invalidate"
+          )
 
         h2 Sensors
 
         .form-group
-          label.form-label.row(v-for="setting of settingsLayout.sensors")
-            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
-            .col-8.input-group-sm
-              coordinate-input.input-group-sm(
-                v-if="setting.type == 'coordinate'",
-                v-bind="setting.attributes",
-                v-model="changedField.sensors[setting.value]",
-                @input="invalidate"
-              )
-              number-input.form-control(
-                v-else,
-                v-bind="setting.attributes",
-                v-model="changedField.sensors[setting.value]",
-                @input="invalidate"
-              )
+          gui-setting(
+            v-for="setting of settingsLayout.sensors",
+            :attributes="setting.attributes",
+            :name="setting.name",
+            :type="setting.type",
+            :info="setting.info",
+            v-model="changedField.sensors[setting.value]",
+            @input="invalidate"
+          )
 
         h2 Trees
 
@@ -63,36 +58,21 @@
           @mouseover="() => { highlightTree = index; }",
           @mouseout="() => { if (highlightTree == index) highlightTree = -1; }"
         )
-          label.form-label.row(v-for="setting of settingsLayout.tree")
-            .col-4.col-form-label.col-form-label-sm.text-end {{ setting.name }}
-            .col-8.input-group-sm
-              coordinate-input.input-group-sm(
-                v-if="setting.type == 'coordinate'",
-                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
-                v-model="tree[setting.value]",
-                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
-              )
-              select.form-select(
-                v-else-if="setting.type == 'select'",
-                v-model="tree[setting.value]",
-                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
-              )
-                option(
-                  v-for="option of setting.options",
-                  :value="option.value"
-                ) {{ option.name }}
-              number-input.form-control(
-                v-else,
-                v-bind="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
-                v-model="tree[setting.value]",
-                @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
-              )
-          label.form-label.row
-            .col-4.col-form-label.col-form-label-sm.text-end Leaf density
+          gui-setting(
+            v-for="setting of settingsLayout.tree",
+            :attributes="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
+            :name="setting.name",
+            :type="setting.type",
+            :info="setting.info",
+            v-model="tree[setting.value]",
+            @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
+          )
+          .form-label.row
+            gui-label.col-4(
+              info="The leaf density is estimated by calculating the average maximal density over many different side views of the tree."
+            ) Leaf density
             .col-8
-              .col-form-label.py-2(
-                v-if="tree.leafDensityValues == 'loading'"
-              )
+              .col-form-label.py-2(v-if="tree.leafDensityValues == 'loading'")
                 | Loading...
               .col-form-label.py-2(v-else-if="!!tree.leafDensityValues")
                 .float-start.text-center(
@@ -144,9 +124,9 @@
 import Statistics from "./Statistics";
 import Agroforestry from "./Agroforestry.vue";
 import settingsLayout from "./settingsLayout";
-import NumberInput from "./NumberInput.vue";
-import CoordinateInput from "./CoordinateInput.vue";
 import UploadFile from "./UploadFile.vue";
+import GUILabel from "./GUILabel.vue";
+import GUISetting from "./GUISetting.vue";
 import { saveAs } from "file-saver";
 import Vue from "vue";
 
@@ -166,9 +146,9 @@ function clone(obj: any) {
 export default {
   components: {
     Agroforestry,
-    NumberInput,
-    CoordinateInput,
     UploadFile,
+    "gui-setting": GUISetting,
+    "gui-label": GUILabel,
   },
   data() {
     const field = {

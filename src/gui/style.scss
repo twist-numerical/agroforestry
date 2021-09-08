@@ -1,6 +1,8 @@
 // https://paletton.com/#uid=20M0u0kjwBN9lT7eWKQnwvet6sm
-$primary: #2967A2;
+$primary: #2967a2;
 $secondary: #ffc164;
 $danger: #ff4136;
+
+$tooltip-max-width: calc(min(500px, 80vw));
 
 @import "node_modules/bootstrap/scss/bootstrap.scss";

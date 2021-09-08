@@ -29,6 +29,8 @@ export default function(guiElement: any) {
       {
         name: "Render resolution",
         value: "renderSize",
+        info:
+          "To calculate incomming light the view for each of the light sources is rendered to a temporary image. This parameter expresses the size of this image in pixels. The bigger this value, the more accurate the calculations, but they take more time.",
         attributes: {
           min: 0,
           max: 1,
@@ -49,6 +51,7 @@ export default function(guiElement: any) {
       {
         name: "Diffusion lights",
         value: "diffuseLightCount",
+        info: "The amound of diffuse light that reaches a sensor is estimated by shining many different lights from all directions. The more diffusion lights, the more accurate and more expensive the computation.",
         attributes: {
           min: 3,
           max: 50,
@@ -143,26 +146,32 @@ export default function(guiElement: any) {
         value: "type",
         invalidateTree: true,
         type: "select",
-        options: [
-          { name: "Alder young", value: "alder_young" },
-          { name: "Alder medium", value: "alder_medium" },
-          { name: "Alder old", value: "alder_old" },
-          { name: "Birch young", value: "birch_young" },
-          { name: "Birch medium", value: "birch_medium" },
-          { name: "Birch old", value: "birch_old" },
-          { name: "Oak young", value: "oak_young" },
-          { name: "Oak medium", value: "oak_medium" },
-          { name: "Oak old", value: "oak_old" },
-          { name: "Alder young alternative", value: "alder_young_alternative" },
-          {
-            name: "Birch medium alternative",
-            value: "birch_medium_alternative",
-          },
-        ],
+        attributes: {
+          options: [
+            { name: "Alder young", value: "alder_young" },
+            { name: "Alder medium", value: "alder_medium" },
+            { name: "Alder old", value: "alder_old" },
+            { name: "Birch young", value: "birch_young" },
+            { name: "Birch medium", value: "birch_medium" },
+            { name: "Birch old", value: "birch_old" },
+            { name: "Oak young", value: "oak_young" },
+            { name: "Oak medium", value: "oak_medium" },
+            { name: "Oak old", value: "oak_old" },
+            {
+              name: "Alder young alternative",
+              value: "alder_young_alternative",
+            },
+            {
+              name: "Birch medium alternative",
+              value: "birch_medium_alternative",
+            },
+          ],
+        },
       },
       {
         name: "Leaf length",
         value: "leafLength",
+        info: "Each leaf is approximated by a triangle. 'Leaf length' indicates how long this triangle is on the maximum leaf growth of 100%.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -172,6 +181,7 @@ export default function(guiElement: any) {
       {
         name: "Leaf width",
         value: "leafWidth",
+        info: "Each leaf is approximated by a triangle. 'Leaf width' indicates how wide this triangle is on the maximum leaf growth of 100%.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -181,6 +191,7 @@ export default function(guiElement: any) {
       {
         name: "Leaves per twig",
         value: "leavesPerTwig",
+        info: "This value expresses how many randomly generated leaves should be present on each twig.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -191,6 +202,7 @@ export default function(guiElement: any) {
       {
         name: "Max twig radius",
         value: "maxTwigRadius",
+        info: "This value expresses how thick a branch can be and still be considered a twig. Only on the branches with a radius smaller than this value, leaves will be added.",
         invalidateTree: true,
         attributes: {
           min: 0,
