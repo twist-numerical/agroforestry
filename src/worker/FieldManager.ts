@@ -27,7 +27,8 @@ import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
-import LeafDensity from "../tree/DensityCalculator";
+import LeafDensity from "../tree/LeafDensity";
+import LeafAreaIndex from "../tree/LeafAreaIndex";
 
 const TREE_COLOR = new Color("brown");
 const TREE_COLOR_FADED = TREE_COLOR.clone().multiplyScalar(0.5);
@@ -115,6 +116,7 @@ export default class FieldManager {
   trees: LidarTree[] = [];
   treeGroup = new Group();
   leafDensity: LeafDensity;
+  leafAreaIndex: LeafAreaIndex;
   parameters: FieldParameters;
 
   constructor(
@@ -125,6 +127,7 @@ export default class FieldManager {
     this.renderer = new WebGLRenderer({ canvas });
     this.photosynthesis = new Photosynthesis(this.renderer);
     this.leafDensity = new LeafDensity(this.renderer);
+    this.leafAreaIndex = new LeafAreaIndex(this.renderer);
     this.field.add(this.ground);
     this.camera.matrixAutoUpdate = false;
 
@@ -311,6 +314,18 @@ export default class FieldManager {
     });
   }
 
+  async calculateLeafAreaIndex(
+    treeParameters: TreeParameters
+  ): Promise<number> {
+    return this.leafAreaIndex.calculate({
+      leaves:
+        treeParameters.leavesPerTwig !== undefined ||
+        treeParameters.leafLength !== undefined ||
+        treeParameters.leafWidth !== undefined,
+      ...treeParameters,
+    });
+  }
+
   calculateYear(
     stepSize: number,
     leafGrowth: number[],
@@ -399,8 +414,9 @@ export default class FieldManager {
 
       this.drawTexture(this.sunlight.target.texture);
     }*/
-    /*{
-      this.drawTexture(this.leafDensity.target.texture);
-    }*/
+    
+    // this.drawTexture(this.leafDensity.target.texture);
+
+    // this.drawTexture(this.leafAreaIndex.target.texture);
   }
 }

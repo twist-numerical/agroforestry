@@ -69,6 +69,14 @@ const messages = {
       ),
     });
   },
+  async leafAreaIndex(message: any) {
+    messageHandler.reply(message, {
+      type: "leafAreaIndexDone",
+      leafAreaIndex: await requireManager().calculateLeafAreaIndex(
+        message.tree
+      ),
+    });
+  },
 };
 
 (async () => {

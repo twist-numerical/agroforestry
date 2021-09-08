@@ -28,11 +28,12 @@ export default class LidarTree extends Object3D {
   private disposed: boolean = false;
   private growth: number = 1;
   public readonly ready: Promise<void>;
+  private parameters: TreeParameters;
 
   constructor(material: Material, parameters: TreeParameters = {}) {
     super();
 
-    parameters = {
+    this.parameters = parameters = {
       type: "alder_medium",
       radialSegments: 7,
       leaves: false,
@@ -115,5 +116,45 @@ export default class LidarTree extends Object3D {
   setGrowth(growth: number) {
     this.growth = growth;
     if (this.leaves) this.leaves.setGrowth(growth);
+  }
+
+  leafArea() {
+    if (!this.leaves) return 0;
+
+    return (
+      0.5 *
+      this.parameters.leafLength *
+      this.parameters.leafWidth *
+      this.leaves.leafCount *
+      this.growth
+    );
+  }
+
+  boundingCylinder() {
+    let radius = 0;
+    let ymin = Infinity;
+    let ymax = -Infinity;
+
+    {
+      const twigs = this.tree;
+      const m = new Matrix4();
+      const p = new Vector3();
+      for (let i = 0; i < twigs.count; ++i) {
+        twigs.getMatrixAt(i, m);
+        p.setFromMatrixPosition(m);
+        if (!isNaN(p.x) && !isNaN(p.z)) {
+          radius = Math.max(radius, Math.hypot(p.x, p.z));
+        }
+        if (!isNaN(p.y)) {
+          ymin = Math.min(ymin, p.y);
+          ymax = Math.max(ymax, p.y);
+        }
+      }
+    }
+    radius *= 1.05;
+    ymax += (ymax - ymin) * 0.05;
+    ymin -= (ymax - ymin) * 0.05;
+
+    return { radius, ymin, ymax };
   }
 }

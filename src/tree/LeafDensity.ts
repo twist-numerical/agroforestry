@@ -81,29 +81,7 @@ export default class LeafDensity {
 
     if (tree.leaves) tree.leaves.material.color = WHITE;
 
-    let radius = 0;
-    let ymin = Infinity;
-    let ymax = -Infinity;
-
-    {
-      const twigs = tree.tree;
-      const m = new Matrix4();
-      const p = new Vector3();
-      for (let i = 0; i < twigs.count; ++i) {
-        twigs.getMatrixAt(i, m);
-        p.setFromMatrixPosition(m);
-        if (!isNaN(p.x) && !isNaN(p.z)) {
-          radius = Math.max(radius, Math.hypot(p.x, p.y));
-        }
-        if (!isNaN(p.y)) {
-          ymin = Math.min(ymin, p.y);
-          ymax = Math.max(ymax, p.y);
-        }
-      }
-    }
-    radius *= 1.05;
-    ymax += (ymax - ymin) * 0.1;
-    ymax -= (ymax - ymin) * 0.1;
+    const {ymin, ymax, radius} = tree.boundingCylinder();
 
     const camera = new OrthographicCamera(
       -radius,

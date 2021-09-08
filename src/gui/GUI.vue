@@ -69,12 +69,12 @@
           )
           .form-label.row
             gui-label.col-4(
-              info="The leaf density is estimated by calculating the average maximal density over many different side views of the tree."
+              info="The leaf density is estimated by calculating the average maximal density over many different side views of the tree. The values reported are respectively the leaf density at 0%, 25%, 50%, 75% and 100% leaf growth."
             ) Leaf density
             .col-8
-              .col-form-label.py-2(v-if="tree.leafDensityValues == 'loading'")
+              .col-form-label(v-if="tree.leafDensityValues == 'loading'")
                 | Loading...
-              .col-form-label.py-2(v-else-if="!!tree.leafDensityValues")
+              .col-form-label(v-else-if="!!tree.leafDensityValues")
                 .float-start.text-center(
                   v-for="(d, i) of tree.leafDensityValues",
                   :title="`Leaf density by ${Math.round((i * 100) / (tree.leafDensityValues.length - 1))}% growth`",
@@ -85,6 +85,20 @@
                 v-else,
                 type="button",
                 @click.preventDefault="() => calculateLeafDensity(tree)"
+              ) Calculate
+          .form-label.row
+            gui-label.col-4(
+              info="The leaf area index is the ratio between the total leaf area and the (convex) ground area covered by the tree."
+            ) Leaf area index
+            .col-8
+              .col-form-label(v-if="tree.leafAreaIndex == 'loading'")
+                | Loading...
+              .col-form-label(v-else-if="!!tree.leafAreaIndex")
+                | {{tree.leafAreaIndex.toFixed(2)}}
+              button.btn.btn-link(
+                v-else,
+                type="button",
+                @click.preventDefault="() => calculateLeafAreaIndex(tree)"
               ) Calculate
           .clearfix
             button.float-end.btn.btn-link.btn-sm(
@@ -216,6 +230,7 @@ export default {
     },
     invalidateTree(tree) {
       Vue.delete(tree, "leafDensityValues");
+      Vue.delete(tree, "leafAreaIndex");
     },
     update() {
       this.updated = true;
@@ -243,6 +258,16 @@ export default {
       const worker = this.$refs.agroforestry.worker;
       const messageEvent = await worker.onReply(worker.postMessage(message));
       Vue.set(tree, "leafDensityValues", messageEvent.data.density);
+    },
+    async calculateLeafAreaIndex(tree: any) {
+      Vue.set(tree, "leafAreaIndex", "loading");
+      const message = {
+        type: "leafAreaIndex",
+        tree: tree,
+      };
+      const worker = this.$refs.agroforestry.worker;
+      const messageEvent = await worker.onReply(worker.postMessage(message));
+      Vue.set(tree, "leafAreaIndex", messageEvent.data.leafAreaIndex);
     },
     error(message: String, time: number = 5000) {
       this.errorMessage = message;

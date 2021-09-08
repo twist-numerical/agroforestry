@@ -78,6 +78,7 @@ export interface Twig {
 
 export default class TreeLeaves extends Mesh {
   material: LeafMaterial;
+  public readonly leafCount: number;
 
   constructor(
     twigs: Twig[],
@@ -100,6 +101,7 @@ export default class TreeLeaves extends Mesh {
     super(geometry, material);
 
     const instances = twigs.length * parameters.leavesPerTwig;
+    this.leafCount = instances;
     const offset = new InstancedBufferAttribute(
       new Float32Array(3 * instances),
       3
