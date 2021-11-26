@@ -51,7 +51,7 @@ export default function(guiElement: any) {
       {
         name: "Diffusion lights",
         value: "diffuseLightCount",
-        info: "The amound of diffuse light that reaches a sensor is estimated by shining many different lights from all directions. The more diffusion lights, the more accurate and more expensive the computation.",
+        info: "The amount of diffuse light that reaches a sensor is estimated by shining many different lights from all directions. The more diffusion lights, the more accurate and more expensive the computation.",
         attributes: {
           min: 3,
           max: 50,
