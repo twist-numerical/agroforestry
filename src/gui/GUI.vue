@@ -88,7 +88,7 @@
               ) Calculate
           .form-label.row
             gui-label.col-4(
-              info="The leaf area index is the ratio between the total leaf area and the (convex) ground area covered by the tree."
+              info="The leaf area index is the ratio between the total leaf area on 100% growth and the (convex) ground area covered by the tree."
             ) Leaf area index
             .col-8
               .col-form-label(v-if="tree.leafAreaIndex == 'loading'")
