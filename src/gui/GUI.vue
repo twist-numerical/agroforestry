@@ -175,7 +175,6 @@ export default {
   data() {
     const field = {
       field: {
-        size: 40,
         latitude: 50.5,
         rotation: 15,
         inclination: 5,

@@ -70,6 +70,7 @@ export default {
   position: absolute;
   top: calc(50% - calc(min(200px, 30vh)) / 2);
   width: 12px;
+  cursor: ew-resize;
 
   &::before {
     content: "";

@@ -58,7 +58,6 @@ function getOrDefault<T>(value: T | undefined, def: T) {
 
 export type FieldParameters = {
   field: {
-    size: number;
     latitude: number;
     rotation?: number;
     inclination?: number;
@@ -208,13 +207,17 @@ export default class FieldManager {
   loadField(parameters: FieldParameters) {
     this.parameters = parameters;
     const rotation = d2r(parameters.field.rotation) || 0;
-    const fieldSize = parameters.field.size;
+    const [xFieldSize, yFieldSize] = parameters.sensors.size;
+    const fieldDiameter = Math.hypot(xFieldSize, yFieldSize);
     this.field.rotation.set(0, rotation, 0);
     this.compass.setRotation(rotation);
-    this.compass.position.set(fieldSize / 2, 0, fieldSize / 2);
+    this.compass.position.set(0.5 * xFieldSize, 0, 0.5 * yFieldSize);
 
     this.ground.geometry.dispose();
-    this.ground.geometry = new PlaneGeometry(fieldSize, fieldSize);
+    this.ground.geometry = new PlaneGeometry(
+      1.5 * xFieldSize,
+      1.5 * yFieldSize
+    );
     this.ground.geometry.applyMatrix4(new Matrix4().makeRotationX(Math.PI / 2));
 
     this.photosynthesis.clear();
@@ -243,21 +246,18 @@ export default class FieldManager {
 
     const renderSize = getOrDefault(parameters.sensors.renderSize, 1024);
     this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
-    this.sunlight.setViewSize(1.5 * parameters.field.size);
+    this.sunlight.setViewSize(fieldDiameter);
     this.sunlight.setRenderSize(renderSize);
-    this.sunIndicator.position.set(-parameters.field.size, 0, 0);
-    const siScale = parameters.field.size / 20;
+    this.sunIndicator.position.set(-fieldDiameter, 0, 0);
+    const siScale = fieldDiameter / 20;
     this.sunIndicator.scale.set(siScale, siScale, siScale);
 
     this.diffuseLight.setCount(
       getOrDefault(parameters.sensors.diffuseLightCount, 13)
     );
-    this.diffuseLight.setViewSize(1.5 * parameters.field.size);
+    this.diffuseLight.setViewSize(fieldDiameter);
     this.diffuseLight.setRenderSize(renderSize);
-    this.diffuseLightIndicator.setLight(
-      this.diffuseLight,
-      parameters.field.size * 0.8
-    );
+    this.diffuseLightIndicator.setLight(this.diffuseLight, 0.8 * fieldDiameter);
 
     while (this.trees.length) {
       this.trees.pop().dispose();

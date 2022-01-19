@@ -17,8 +17,8 @@ function clamp(value: number, min: number, max: number) {
   return value < min ? min : value > max ? max : value;
 }
 
-export function parse(input: string | number) {
-  return +clamp(math.evaluate(this.rawValue), this.min, this.max).toFixed(
+export function parse(input: any) {
+  return +clamp(math.evaluate(input), this.min, this.max).toFixed(
     this.precision
   );
 }

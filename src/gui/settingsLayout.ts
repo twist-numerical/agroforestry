@@ -1,5 +1,25 @@
 import * as math from "mathjs";
 
+function clamp(value: number, min: number, max: number) {
+  return value < min ? min : value > max ? max : value;
+}
+
+function logSlider(min: number, max: number, precision = 2) {
+  const lMin = Math.log2(min);
+  const lMax = Math.log2(max);
+  return {
+    convertToFloat(k: number) {
+      return (Math.log2(k) - lMin) / (lMax - lMin);
+    },
+    convertFromFloat(k: number) {
+      return +Math.pow(2, lMin + (lMax - lMin) * k).toFixed(precision);
+    },
+    parse: function(value: string) {
+      return +clamp(math.evaluate(value), min, max).toFixed(precision);
+    },
+  };
+}
+
 export default function(guiElement: any) {
   return {
     sensors: [
@@ -8,12 +28,7 @@ export default function(guiElement: any) {
         value: "size",
         type: "coordinate",
         attributes: {
-          get xbounds() {
-            return [0, guiElement.changedField.field.size];
-          },
-          get ybounds() {
-            return [0, guiElement.changedField.field.size];
-          },
+          ...logSlider(2, 2000, 2),
         },
       },
       {
@@ -21,9 +36,7 @@ export default function(guiElement: any) {
         value: "count",
         type: "coordinate",
         attributes: {
-          xbounds: [1, 256],
-          ybounds: [1, 256],
-          precision: 0,
+          ...logSlider(1, 256, 0),
         },
       },
       {
@@ -43,15 +56,15 @@ export default function(guiElement: any) {
           },
           parse: function(value: string) {
             let k = Math.round(Math.log2(math.evaluate(value)));
-            const clamped = k < 8 ? 8 : k < 12 ? k : 12;
-            return Math.pow(2, clamped);
+            return Math.pow(2, clamp(k, 8, 12));
           },
         },
       },
       {
         name: "Diffusion lights",
         value: "diffuseLightCount",
-        info: "The amount of diffuse light that reaches a sensor is estimated by shining many different lights from all directions. The more diffusion lights, the more accurate and more expensive the computation.",
+        info:
+          "The amount of diffuse light that reaches a sensor is estimated by shining many different lights from all directions. The more diffusion lights, the more accurate and more expensive the computation.",
         attributes: {
           min: 3,
           max: 50,
@@ -60,14 +73,6 @@ export default function(guiElement: any) {
       },
     ],
     field: [
-      {
-        name: "Size",
-        value: "size",
-        attributes: {
-          min: 1,
-          max: 2000,
-        },
-      },
       {
         name: "Latitude",
         value: "latitude",
@@ -109,16 +114,12 @@ export default function(guiElement: any) {
         value: "position",
         attributes: {
           get xbounds() {
-            return [
-              -guiElement.changedField.field.size / 2,
-              guiElement.changedField.field.size / 2,
-            ];
+            const max = guiElement.changedField.sensors.size[0] * 1.5;
+            return [-max, max];
           },
           get ybounds() {
-            return [
-              -guiElement.changedField.field.size / 2,
-              guiElement.changedField.field.size / 2,
-            ];
+            const max = guiElement.changedField.sensors.size[1] * 1.5;
+            return [-max, max];
           },
         },
       },
@@ -171,7 +172,8 @@ export default function(guiElement: any) {
       {
         name: "Leaf length",
         value: "leafLength",
-        info: "Each leaf is approximated by a triangle. 'Leaf length' indicates how long this triangle is on the maximum leaf growth of 100%.",
+        info:
+          "Each leaf is approximated by a triangle. 'Leaf length' indicates how long this triangle is on the maximum leaf growth of 100%.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -181,7 +183,8 @@ export default function(guiElement: any) {
       {
         name: "Leaf width",
         value: "leafWidth",
-        info: "Each leaf is approximated by a triangle. 'Leaf width' indicates how wide this triangle is on the maximum leaf growth of 100%.",
+        info:
+          "Each leaf is approximated by a triangle. 'Leaf width' indicates how wide this triangle is on the maximum leaf growth of 100%.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -191,7 +194,8 @@ export default function(guiElement: any) {
       {
         name: "Leaves per twig",
         value: "leavesPerTwig",
-        info: "This value expresses how many randomly generated leaves should be present on each twig.",
+        info:
+          "This value expresses how many randomly generated leaves should be present on each twig.",
         invalidateTree: true,
         attributes: {
           min: 0,
@@ -202,7 +206,8 @@ export default function(guiElement: any) {
       {
         name: "Max twig radius",
         value: "maxTwigRadius",
-        info: "This value expresses how thick a branch can be and still be considered a twig. Only on the branches with a radius smaller than this value, leaves will be added.",
+        info:
+          "This value expresses how thick a branch can be and still be considered a twig. Only on the branches with a radius smaller than this value, leaves will be added.",
         invalidateTree: true,
         attributes: {
           min: 0,

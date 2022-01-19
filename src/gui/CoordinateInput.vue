@@ -1,17 +1,26 @@
 <template lang="pug">
-div.input-group
-  div.input-group-text x:
+.input-group
+  .input-group-text x:
   number-input.form-control(
-    :precision="precision" :min="xbounds[0]", :max="xbounds[1]", v-model="x")
-  div.input-group-text y:
+    :min="xbounds[0]",
+    :max="xbounds[1]",
+    v-model="x",
+    v-bind="$attrs"
+  )
+  .input-group-text y:
   number-input.form-control(
-    :precision="precision" :min="ybounds[0]", :max="ybounds[1]", v-model="y")
+    :min="ybounds[0]",
+    :max="ybounds[1]",
+    v-model="y",
+    v-bind="$attrs"
+  )
 </template>
 
 <script lang="ts">
 import NumberInput from "./NumberInput.vue";
 
 export default {
+  inheritAttrs: false,
   components: {
     NumberInput,
   },
@@ -27,10 +36,6 @@ export default {
     value: {
       type: Array,
       default: () => [0, 0],
-    },
-    precision: {
-      type: Number,
-      default: 2,
     },
   },
   data() {
