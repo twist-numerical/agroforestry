@@ -16,8 +16,5 @@ export default {
       selected: 0,
     };
   },
-  mounted() {
-    console.log(this.$slots);
-  },
 };
 </script>

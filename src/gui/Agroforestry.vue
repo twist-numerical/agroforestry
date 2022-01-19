@@ -183,7 +183,7 @@ export default {
   mounted() {
     this.__mounted = true;
 
-    this.resizeCallback = () => {
+    this.resize = () => {
       this.worker.postMessage({
         type: "resize",
         width: this.$refs.canvas.clientWidth,
@@ -198,7 +198,7 @@ export default {
 
     this.initWorker();
 
-    window.addEventListener("resize", this.resizeCallback);
+    window.addEventListener("resize", this.resize);
   },
 
   methods: {
@@ -229,7 +229,7 @@ export default {
       );
 
       this.worker.postMessage({ type: "loadField", field: this.field });
-      this.resizeCallback();
+      this.resize();
 
       if (this.controls) this.controls.dispose();
       this.controls = new OrbitControls(this.camera, this.$refs.canvas);
@@ -280,8 +280,6 @@ export default {
       );
       this.active = false;
 
-      console.log(messageEvent);
-
       saveAs(
         new Blob(
           messageEvent.data.sunlight.map(
@@ -324,8 +322,6 @@ export default {
         this.worker.postMessage(message)
       );
       this.active = false;
-
-      console.log(messageEvent);
 
       saveAs(
         new Blob(
@@ -382,7 +378,7 @@ export default {
   },
   destroyed() {
     this.__mounted = false;
-    window.removeEventListener("resize", this.resizeCallback);
+    window.removeEventListener("resize", this.resize);
     if (this.worker !== undefined) {
       this.worker.terminate();
     }

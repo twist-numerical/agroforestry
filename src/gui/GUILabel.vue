@@ -34,7 +34,6 @@ export default {
       if (this.tooltip) this.tooltip.dispose();
       this.tooltip = null;
       if (this.info) {
-        console.log(this.info);
         this.tooltip = new Tooltip(nameElement, {
           popperConfig: (defaultConfig) => {
             return {
