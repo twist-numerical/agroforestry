@@ -72,7 +72,7 @@ export default function(guiElement: any) {
         },
       },
     ],
-    field: [
+    geography: [
       {
         name: "Latitude",
         value: "latitude",

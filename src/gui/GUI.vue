@@ -30,16 +30,16 @@
         .container-fluid.h-100.overflow-y-auto.px-4
           h1 Agroforestry
 
-          h2 Field
+          h2 Geography
 
           .form-group
             gui-setting(
-              v-for="setting of settingsLayout.field",
+              v-for="setting of settingsLayout.geography",
               :attributes="setting.attributes",
               :name="setting.name",
               :type="setting.type",
               :info="setting.info",
-              v-model="changedField.field[setting.value]",
+              v-model="changedField.geography[setting.value]",
               @input="invalidate"
             )
 
@@ -150,6 +150,8 @@ import GUISetting from "./GUISetting.vue";
 import SideBySide from "./SideBySide.vue";
 import { saveAs } from "file-saver";
 import Vue from "vue";
+import { Field } from "../data/Field";
+import workerManager from "./workerManager";
 
 function clone(obj: any) {
   if (obj === null || obj === undefined) return obj;
@@ -173,8 +175,8 @@ export default {
     "side-by-side": SideBySide,
   },
   data() {
-    const field = {
-      field: {
+    const field: Field = {
+      geography: {
         latitude: 50.5,
         rotation: 15,
         inclination: 5,
@@ -235,7 +237,7 @@ export default {
     invalidate() {
       this.updated = false;
     },
-    invalidateTree(tree) {
+    invalidateTree(tree: Field["trees"][0]) {
       Vue.delete(tree, "leafDensityValues");
       Vue.delete(tree, "leafAreaIndex");
     },
@@ -258,25 +260,23 @@ export default {
     },
     async calculateLeafDensity(tree: any) {
       Vue.set(tree, "leafDensityValues", "loading");
-      const message = {
-        type: "leafDensity",
-        tree: tree,
-      };
-      const worker = this.$refs.agroforestry.worker;
-      const messageEvent = await worker.onReply(worker.postMessage(message));
-      Vue.set(tree, "leafDensityValues", messageEvent.data.density);
+      const density = (
+        await workerManager.onReply(
+          workerManager.postMessage("leafDensity", tree)
+        )
+      ).data as number[];
+      Vue.set(tree, "leafDensityValues", density);
     },
     async calculateLeafAreaIndex(tree: any) {
       Vue.set(tree, "leafAreaIndex", "loading");
-      const message = {
-        type: "leafAreaIndex",
-        tree: tree,
-      };
-      const worker = this.$refs.agroforestry.worker;
-      const messageEvent = await worker.onReply(worker.postMessage(message));
-      Vue.set(tree, "leafAreaIndex", messageEvent.data.leafAreaIndex);
+      const leafAreaIndex = (
+        await workerManager.onReply(
+          workerManager.postMessage("leafAreaIndex", tree)
+        )
+      ).data as number;
+      Vue.set(tree, "leafAreaIndex", leafAreaIndex);
     },
-    error(message: String, time: number = 5000) {
+    error(message: string, time: number = 5000) {
       this.errorMessage = message;
       this.showErrorMessage = true;
       setTimeout(() => {
@@ -308,7 +308,7 @@ export default {
         "field.json"
       );
     },
-    onDrop(e) {
+    onDrop(e: DragEvent) {
       e.stopPropagation();
       e.preventDefault();
       if (

@@ -1,11 +1,12 @@
-import MessageHandler from "./MessageHandler";
-import FieldManager from "./FieldManager";
+import MessageHandler, { Message, MessageListener } from "./MessageHandler";
+import FieldManager, { RenderSettings } from "./FieldManager";
+import { TreeParameters } from "../tree/LidarTree";
+import { Field } from "../data/Field";
 
 const messageHandler = new MessageHandler((self as any) as Worker);
 
 function progress(message: string, value: number) {
-  messageHandler.postMessage({
-    type: "progress",
+  messageHandler.postMessage("progress", {
     message: message,
     value: value,
   });
@@ -20,73 +21,55 @@ function requireManager(): FieldManager {
   return manager;
 }
 
-const messages = {
-  init({ canvas }) {
+const messages: { [type: string]: MessageListener } = {
+  init(canvas: HTMLCanvasElement) {
     manager = new FieldManager(canvas, progress);
   },
-  loadField({ field }) {
+  loadField(field: Field) {
     manager.loadField(field);
   },
-  resize(message: any) {
-    requireManager().resize(message.width, message.height, message.pixelRatio);
+  resize(data) {
+    requireManager().resize(data.width, data.height, data.pixelRatio);
   },
-  render(message: any) {
-    requireManager().render(message);
+  render(data: RenderSettings, message) {
+    requireManager().render(data);
 
-    messageHandler.reply(message, {
-      type: "renderDone",
-    });
+    messageHandler.reply(message, {});
   },
-  year(message: any) {
+  year(data, message) {
     const [sunlight, diffuseLight] = requireManager().calculateYear(
-      message.stepSize,
-      message.leafGrowth
+      data.stepSize,
+      data.leafGrowth
     );
 
     messageHandler.reply(message, {
-      type: "yearDone",
       sunlight,
       diffuseLight,
     });
   },
-  moment(message: any) {
-    const data = requireManager().calculateMoment(
-      message.time,
-      message.day,
-      message.leafGrowth
+  moment(data, message) {
+    const moment = requireManager().calculateMoment(
+      data.time,
+      data.day,
+      data.leafGrowth
     );
 
-    messageHandler.reply(message, {
-      type: "momentDone",
-      data,
-    });
+    messageHandler.reply(message, moment);
   },
-  async leafDensity(message: any) {
-    messageHandler.reply(message, {
-      type: "leafDensityDone",
-      density: await requireManager().calculateLeafDensity(
-        message.tree
-      ),
-    });
+  async leafDensity(data: TreeParameters, message) {
+    messageHandler.reply(
+      message,
+      await requireManager().calculateLeafDensity(data)
+    );
   },
-  async leafAreaIndex(message: any) {
-    messageHandler.reply(message, {
-      type: "leafAreaIndexDone",
-      leafAreaIndex: await requireManager().calculateLeafAreaIndex(
-        message.tree
-      ),
-    });
+  async leafAreaIndex(data: TreeParameters, message) {
+    messageHandler.reply(
+      message,
+      await requireManager().calculateLeafAreaIndex(data)
+    );
   },
 };
 
-(async () => {
-  for await (const messageEvent of messageHandler.messages()) {
-    const action = messages[messageEvent.data.type];
-
-    if (action === undefined) {
-      console.error(`The action '${action}' is not available`);
-    } else {
-      action(messageEvent.data);
-    }
-  }
-})();
+Object.entries(messages).forEach(([type, listener]) =>
+  messageHandler.addMessageListener(type, listener)
+);

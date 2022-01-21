@@ -102,6 +102,8 @@ import { saveAs } from "file-saver";
 import { clamp, map, range } from "../util";
 import Accordion from "./Accordion.vue";
 import NumberInput from "./NumberInput.vue";
+import workerManager from "./workerManager";
+import { RenderSettings } from "../worker/FieldManager";
 
 function rafPromise(): Promise<void> {
   let _resolve: () => void;
@@ -179,13 +181,11 @@ export default {
       ],
     };
   },
-
   mounted() {
     this.__mounted = true;
 
     this.resize = () => {
-      this.worker.postMessage({
-        type: "resize",
+      workerManager.postMessage("resize", {
         width: this.$refs.canvas.clientWidth,
         height: this.$refs.canvas.clientHeight,
         pixelRatio: window.devicePixelRatio,
@@ -207,49 +207,29 @@ export default {
       const time = getOrDefault(this.momentSettings.timeOfDay, 12);
       const seconds = (day * 24 + time) * 60 * 60;
 
-      return this.worker.onReply(
-        this.worker.postMessage({
-          type: "render",
+      return workerManager.onReply(
+        workerManager.postMessage("render", {
           leafGrowth: getOrDefault(this.momentSettings.leafGrowth, 0.5),
           seconds: seconds,
           camera: this.camera.matrix.toArray(),
           highlightTrees: this.highlightTree >= 0 ? [this.highlightTree] : [],
-        })
+        } as RenderSettings)
       );
     },
     initWorker() {
       const offscreen = this.$refs.canvas.transferControlToOffscreen();
-      this.worker = new MessageHandler(new Worker("../worker/worker.ts"));
-      this.worker.postMessage(
-        {
-          type: "init",
-          canvas: offscreen,
-        },
-        [offscreen]
-      );
+      workerManager.postMessage("init", offscreen, [offscreen]);
 
-      this.worker.postMessage({ type: "loadField", field: this.field });
+      workerManager.postMessage("loadField", this.field);
       this.resize();
 
       if (this.controls) this.controls.dispose();
       this.controls = new OrbitControls(this.camera, this.$refs.canvas);
       this.controls.update();
 
-      const messages = {
-        progress: (message: any) => {
-          this.progress = clamp(message.value, 0, 1);
-        },
-      };
-
-      (async () => {
-        for await (const messageEvent of this.worker.messages()) {
-          const action = messages[messageEvent.data.type];
-
-          if (action === undefined)
-            console.error(`The action '${action}' is not available`);
-          else action(messageEvent.data);
-        }
-      })();
+      workerManager.addMessageListener("progress", (data) => {
+        this.progress = clamp(data.value, 0, 1);
+      });
 
       (async () => {
         while (this.__mounted) {
@@ -262,27 +242,29 @@ export default {
       })();
     },
     abort() {
-      if (this.worker !== undefined) {
-        this.active = false;
-        this.worker.terminate();
-        ++this.canvasID;
-        this.$nextTick(() => this.initWorker(), 100);
-      }
+      this.active = false;
+      workerManager.restart();
+      ++this.canvasID;
+      this.$nextTick(() => this.initWorker());
     },
     async calculateYear() {
       this.active = true;
-      const messageEvent = await this.worker.onReply(
-        this.worker.postMessage({
-          type: "year",
-          leafGrowth: this.yearSettings.leafGrowth,
-          stepSize: this.yearSettings.timeStep * 60,
-        })
-      );
+      const data = (
+        await workerManager.onReply(
+          workerManager.postMessage("year", {
+            leafGrowth: this.yearSettings.leafGrowth,
+            stepSize: this.yearSettings.timeStep * 60,
+          })
+        )
+      ).data as {
+        sunlight: [number, number, number[]][];
+        diffuseLight: [number, number[]][];
+      };
       this.active = false;
 
       saveAs(
         new Blob(
-          messageEvent.data.sunlight.map(
+          data.sunlight.map(
             ([day, time, row], index: number) =>
               `${day}, ${time}, ${row
                 .map((v) => (index == 0 ? v : v.toPrecision(8)))
@@ -297,7 +279,7 @@ export default {
 
       saveAs(
         new Blob(
-          messageEvent.data.diffuseLight.map(
+          data.diffuseLight.map(
             ([time, row], index: number) =>
               `${time}, ${row
                 .map((v) => (index == 0 ? v : v.toPrecision(8)))
@@ -313,19 +295,21 @@ export default {
     async calculateMoment() {
       this.active = true;
       const message = {
-        type: "moment",
         day: this.momentSettings.day,
         time: this.momentSettings.timeOfDay,
         leafGrowth: this.momentSettings.leafGrowth,
       };
-      const messageEvent = await this.worker.onReply(
-        this.worker.postMessage(message)
-      );
+      const data = (
+        await workerManager.onReply(
+          workerManager.postMessage("moment", message)
+        )
+      ).data;
+      console.log(data);
       this.active = false;
 
       saveAs(
         new Blob(
-          messageEvent.data.data.map(
+          data.map(
             ([t, ...row], index: number) =>
               `${t}, ${row
                 .map((v) => (index == 0 ? v : v.toPrecision(8)))
@@ -359,7 +343,7 @@ export default {
       };
       reader.readAsText(file);
     },
-    onDrop(e) {
+    onDrop(e: DragEvent) {
       e.stopPropagation();
       e.preventDefault();
       if (
@@ -373,15 +357,13 @@ export default {
   },
   watch: {
     field() {
-      this.worker.postMessage({ type: "loadField", field: this.field });
+      workerManager.postMessage("loadField", this.field);
     },
   },
   destroyed() {
     this.__mounted = false;
     window.removeEventListener("resize", this.resize);
-    if (this.worker !== undefined) {
-      this.worker.terminate();
-    }
+    workerManager.terminate();
   },
 };
 </script>

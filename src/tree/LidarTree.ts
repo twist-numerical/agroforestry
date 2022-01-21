@@ -11,15 +11,14 @@ import getTreeData from "./treeConfiguration";
 import TreeLeaves from "./TreeLeaves";
 
 export type TreeParameters = {
-  type?: string;
-  radialSegments?: number;
-  leaves?: boolean;
-  leafLength?: number;
-  leafWidth?: number;
-  leavesPerTwig?: number;
-  maxTwigRadius?: number;
-  scale?: number;
-  leafColor?: Color;
+  type: string;
+  radialSegments: number;
+  leafLength: number;
+  leafWidth: number;
+  leavesPerTwig: number;
+  maxTwigRadius: number;
+  scale: number;
+  leafColor: Color;
 };
 
 export default class LidarTree extends Object3D {
@@ -30,13 +29,12 @@ export default class LidarTree extends Object3D {
   public readonly ready: Promise<void>;
   private parameters: TreeParameters;
 
-  constructor(material: Material, parameters: TreeParameters = {}) {
+  constructor(material: Material, parameters: TreeParameters) {
     super();
 
     this.parameters = parameters = {
       type: "alder_medium",
       radialSegments: 7,
-      leaves: false,
       leafLength: 0.1,
       leafWidth: 0.1,
       leavesPerTwig: 5,
@@ -83,19 +81,17 @@ export default class LidarTree extends Object3D {
         this.tree.instanceMatrix.needsUpdate = true;
         this.add(this.tree);
 
-        if (parameters.leaves) {
-          this.leaves = new TreeLeaves(
-            segments.filter(({ radius }) => radius < parameters.maxTwigRadius),
-            {
-              leafLength: parameters.leafLength,
-              leafWidth: parameters.leafWidth,
-              leavesPerTwig: parameters.leavesPerTwig,
-              leafColor: parameters.leafColor,
-            }
-          );
-          this.leaves.setGrowth(this.growth);
-          this.add(this.leaves);
-        }
+        this.leaves = new TreeLeaves(
+          segments.filter(({ radius }) => radius < parameters.maxTwigRadius),
+          {
+            leafLength: parameters.leafLength,
+            leafWidth: parameters.leafWidth,
+            leavesPerTwig: parameters.leavesPerTwig,
+            leafColor: parameters.leafColor,
+          }
+        );
+        this.leaves.setGrowth(this.growth);
+        this.add(this.leaves);
 
         if (this.disposed) this.dispose();
       }

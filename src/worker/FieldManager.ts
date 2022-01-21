@@ -29,6 +29,7 @@ import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
 import LeafDensity from "../tree/LeafDensity";
 import LeafAreaIndex from "../tree/LeafAreaIndex";
+import { Field } from "../data/Field";
 
 const TREE_COLOR = new Color("brown");
 const TREE_COLOR_FADED = TREE_COLOR.clone().multiplyScalar(0.5);
@@ -55,32 +56,6 @@ function getOrDefault<T>(value: T | undefined, def: T) {
   if (value === undefined) return def;
   return value;
 }
-
-export type FieldParameters = {
-  field: {
-    latitude: number;
-    rotation?: number;
-    inclination?: number;
-    inclinationRotation?: number;
-  };
-  trees: {
-    position: [number, number];
-    type: string;
-    scale?: number;
-    rotation?: number;
-    leaves?: boolean;
-    leafLength?: number;
-    leafWidth?: number;
-    leavesPerTwig?: number;
-    maxTwigRadius?: number;
-  }[];
-  sensors: {
-    size: [number, number];
-    count: [number, number];
-    renderSize?: number;
-    diffuseLightCount?: number;
-  };
-};
 
 const floorGeometry = new PlaneGeometry(-0.5, 0.5, 1, 1);
 floorGeometry.applyMatrix4(new Matrix4().makeRotationX(Math.PI / 2));
@@ -116,7 +91,7 @@ export default class FieldManager {
   treeGroup = new Group();
   leafDensity: LeafDensity;
   leafAreaIndex: LeafAreaIndex;
-  parameters: FieldParameters;
+  parameters: Field;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -204,9 +179,9 @@ export default class FieldManager {
     this.highlightTrees(highlightTrees);
   }
 
-  loadField(parameters: FieldParameters) {
+  loadField(parameters: Field) {
     this.parameters = parameters;
-    const rotation = d2r(parameters.field.rotation) || 0;
+    const rotation = d2r(parameters.geography.rotation) || 0;
     const [xFieldSize, yFieldSize] = parameters.sensors.size;
     const fieldDiameter = Math.hypot(xFieldSize, yFieldSize);
     this.field.rotation.set(0, rotation, 0);
@@ -235,8 +210,8 @@ export default class FieldManager {
     this.sensors.position.set(0, 0.1, 0);
     this.ground.add(this.sensors);
 
-    const inclinationRotation = d2r(parameters.field.inclinationRotation) || 0;
-    const inclination = d2r(parameters.field.inclination) || 0;
+    const inclinationRotation = d2r(parameters.geography.inclinationRotation) || 0;
+    const inclination = d2r(parameters.geography.inclination) || 0;
     const inclinationAxis = new Vector3(
       Math.sin(inclinationRotation),
       0,
@@ -245,7 +220,7 @@ export default class FieldManager {
     this.ground.setRotationFromAxisAngle(inclinationAxis, inclination);
 
     const renderSize = getOrDefault(parameters.sensors.renderSize, 1024);
-    this.sun.setLatitude(getOrDefault(parameters.field.latitude, 10));
+    this.sun.setLatitude(getOrDefault(parameters.geography.latitude, 10));
     this.sunlight.setViewSize(fieldDiameter);
     this.sunlight.setRenderSize(renderSize);
     this.sunIndicator.position.set(-fieldDiameter, 0, 0);
@@ -305,25 +280,13 @@ export default class FieldManager {
   async calculateLeafDensity(
     treeParameters: TreeParameters
   ): Promise<number[]> {
-    return this.leafDensity.calculate({
-      leaves:
-        treeParameters.leavesPerTwig !== undefined ||
-        treeParameters.leafLength !== undefined ||
-        treeParameters.leafWidth !== undefined,
-      ...treeParameters,
-    });
+    return this.leafDensity.calculate(treeParameters);
   }
 
   async calculateLeafAreaIndex(
     treeParameters: TreeParameters
   ): Promise<number> {
-    return this.leafAreaIndex.calculate({
-      leaves:
-        treeParameters.leavesPerTwig !== undefined ||
-        treeParameters.leafLength !== undefined ||
-        treeParameters.leafWidth !== undefined,
-      ...treeParameters,
-    });
+    return this.leafAreaIndex.calculate(treeParameters);
   }
 
   calculateYear(
