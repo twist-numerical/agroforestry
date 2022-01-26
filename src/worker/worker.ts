@@ -23,11 +23,15 @@ function progress(message: string, value: number) {
   });
 }
 
+const treeStore = new TreeStore();
+treeStore.onUpdate((trees) =>
+  messageHandler.postMessage("availableTrees", trees)
+);
+
 let renderer: WebGLRenderer | undefined = undefined;
 
-const treeStore = lazy(() => new TreeStore());
 const fieldManager = lazy(
-  () => new FieldManager(renderer, treeStore(), progress)
+  () => new FieldManager(renderer, treeStore, progress)
 );
 const leafDensity = lazy(() => new LeafDensity(renderer));
 const leafAreaIndex = lazy(() => new LeafAreaIndex(renderer));
@@ -41,6 +45,12 @@ const messages: { [type: string]: MessageListener } = {
   },
   resize(data) {
     fieldManager().resize(data.width, data.height, data.pixelRatio);
+  },
+  availableTrees(_, message) {
+    messageHandler.reply(message, treeStore.availableTrees);
+  },
+  renameTree({ from, to }: { from: string; to: string }) {
+    treeStore.rename(from, to);
   },
   render(data: RenderSettings, message) {
     fieldManager().render(data);
@@ -71,13 +81,13 @@ const messages: { [type: string]: MessageListener } = {
   async leafDensity(data: TreeConfiguration, message) {
     messageHandler.reply(
       message,
-      await leafDensity().calculate(await treeStore().loadTree(data))
+      await leafDensity().calculate(await treeStore.loadTree(data))
     );
   },
   async leafAreaIndex(data: TreeConfiguration, message) {
     messageHandler.reply(
       message,
-      await leafAreaIndex().calculate(await treeStore().loadTree(data))
+      await leafAreaIndex().calculate(await treeStore.loadTree(data))
     );
   },
 };

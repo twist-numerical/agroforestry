@@ -147,20 +147,13 @@ export default function(guiElement: any) {
         value: "type",
         invalidateTree: true,
         type: "select",
-        attributes: {
-          options: [
-            "Alder young",
-            "Alder medium",
-            "Alder old",
-            "Birch young",
-            "Birch medium",
-            "Birch old",
-            "Oak young",
-            "Oak medium",
-            "Oak old",
-            "Alder young alternative",
-            "Birch medium alternative",
-          ].map((v) => ({ name: v, value: v })),
+        attributes() {
+          return {
+            options: guiElement.availableTrees.map(({ name }) => ({
+              name: name,
+              value: name,
+            })),
+          };
         },
       },
       {

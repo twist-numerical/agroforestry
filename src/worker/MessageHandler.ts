@@ -87,7 +87,7 @@ export default class MessageHandler {
     return message;
   }
 
-  postMessage(type: string, data: any, transfer: Transferable[] = []): Message {
+  postMessage(type: string, data?: any, transfer: Transferable[] = []): Message {
     const message: Message = {
       type: type,
       messageID: this.__nextMesageID(),

@@ -30,6 +30,8 @@
         .container-fluid.h-100.overflow-y-auto.px-4
           h1 Agroforestry
 
+          tree-overview(:trees="availableTrees")
+          
           h2 Geography
 
           .form-group
@@ -115,6 +117,10 @@
           button.btn.btn-link(type="button", @click="() => addTree()") Add new tree
 
           hr
+
+          tree-overview(:trees="availableTrees")
+
+          hr
           .form-group
             h4 References
             ul
@@ -152,6 +158,7 @@ import { saveAs } from "file-saver";
 import Vue from "vue";
 import { FieldConfiguration, TreeConfiguration } from "../data/Field";
 import workerManager from "./workerManager";
+import TreeOverview from "./TreeOverview.vue";
 
 function clone(obj: any) {
   if (obj === null || obj === undefined) return obj;
@@ -173,6 +180,31 @@ export default {
     "gui-setting": GUISetting,
     "gui-label": GUILabel,
     "side-by-side": SideBySide,
+    "tree-overview": TreeOverview,
+  },
+  created() {
+    this.updateAvailableTrees = (available: string[]) => {
+      this.availableTrees = available;
+    };
+    workerManager.addMessageListener(
+      "availableTrees",
+      this.updateAvailableTrees
+    );
+    (async () => {
+      this.updateAvailableTrees(
+        (
+          await workerManager.onReply(
+            workerManager.postMessage("availableTrees")
+          )
+        ).data
+      );
+    })();
+  },
+  destroyed() {
+    workerManager.removeMessageListener(
+      "availableTrees",
+      this.updateAvailableTrees
+    );
   },
   data() {
     const field: FieldConfiguration = {
@@ -229,6 +261,7 @@ export default {
       showErrorMessage: false,
       highlightTree: -1,
       field: field,
+      availableTrees: [],
       changedField: clone(field),
       settingsLayout: settingsLayout(this),
     };
