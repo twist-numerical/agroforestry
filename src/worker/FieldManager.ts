@@ -18,18 +18,17 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { constant, map, range } from "../util";
+import { constant, range } from "../util";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
-import LidarTree, { TreeParameters } from "../tree/LidarTree";
+import Tree from "../tree/Tree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";
 import SensorGrid from "../photosynthesis/SensorGrid";
 import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
-import LeafDensity from "../tree/LeafDensity";
-import LeafAreaIndex from "../tree/LeafAreaIndex";
-import { Field } from "../data/Field";
+import { FieldConfiguration } from "../data/Field";
+import TreeStore from "../tree/TreeStore";
 
 const TREE_COLOR = new Color("brown");
 const TREE_COLOR_FADED = TREE_COLOR.clone().multiplyScalar(0.5);
@@ -72,7 +71,6 @@ export default class FieldManager {
   );
   compass = new Compass();
   sensors: SensorGrid;
-  renderer: WebGLRenderer;
   photosynthesis: Photosynthesis;
   field = new Group();
   sunlight = new Sunlight(1, 1);
@@ -87,21 +85,17 @@ export default class FieldManager {
   height: number = 300;
   progress: (message: string, value: number) => void;
   drawTexture: (texture: Texture) => void;
-  trees: LidarTree[] = [];
+  trees: Tree[] = [];
   treeGroup = new Group();
-  leafDensity: LeafDensity;
-  leafAreaIndex: LeafAreaIndex;
-  parameters: Field;
+  parameters: FieldConfiguration;
 
   constructor(
-    canvas: HTMLCanvasElement,
+    public renderer: WebGLRenderer,
+    public treeStore: TreeStore,
     progress: (message: string, value: number) => void
   ) {
     this.progress = progress;
-    this.renderer = new WebGLRenderer({ canvas });
     this.photosynthesis = new Photosynthesis(this.renderer);
-    this.leafDensity = new LeafDensity(this.renderer);
-    this.leafAreaIndex = new LeafAreaIndex(this.renderer);
     this.field.add(this.ground);
     this.camera.matrixAutoUpdate = false;
 
@@ -179,7 +173,7 @@ export default class FieldManager {
     this.highlightTrees(highlightTrees);
   }
 
-  loadField(parameters: Field) {
+  loadField(parameters: FieldConfiguration) {
     this.parameters = parameters;
     const rotation = d2r(parameters.geography.rotation) || 0;
     const [xFieldSize, yFieldSize] = parameters.sensors.size;
@@ -210,7 +204,8 @@ export default class FieldManager {
     this.sensors.position.set(0, 0.1, 0);
     this.ground.add(this.sensors);
 
-    const inclinationRotation = d2r(parameters.geography.inclinationRotation) || 0;
+    const inclinationRotation =
+      d2r(parameters.geography.inclinationRotation) || 0;
     const inclination = d2r(parameters.geography.inclination) || 0;
     const inclinationAxis = new Vector3(
       Math.sin(inclinationRotation),
@@ -242,20 +237,23 @@ export default class FieldManager {
       color: TREE_COLOR,
     });
     for (const treeParameters of parameters.trees) {
-      const tree = new LidarTree(treeMaterial, {
-        leaves:
-          treeParameters.leavesPerTwig !== undefined ||
-          treeParameters.leafLength !== undefined ||
-          treeParameters.leafWidth !== undefined,
-        leafColor: LEAF_COLOR,
-        ...treeParameters,
-      });
-      const [x, y] = treeParameters.position;
-      tree.position.set(x, 0, y);
-      tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
-      tree.rotateY(d2r(getOrDefault(treeParameters.rotation, 0)));
-      this.trees.push(tree);
-      this.ground.add(tree);
+      (async () => {
+        const tree = await this.treeStore.loadTree(
+          {
+            ...treeParameters,
+            leafColor: LEAF_COLOR,
+          },
+          treeMaterial.clone()
+        );
+        const [x, y] = treeParameters.position;
+        tree.position.set(x, 0, y);
+        tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
+        tree.rotateY(d2r(getOrDefault(treeParameters.rotation, 0)));
+        const scale = treeParameters.scale;
+        tree.scale.set(scale, scale, scale);
+        this.trees.push(tree);
+        this.ground.add(tree);
+      })();
     }
   }
 
@@ -275,18 +273,6 @@ export default class FieldManager {
     plane.applyMatrix4(this.ground.matrixWorld);
 
     return plane.distanceToPoint(target) < 0;
-  }
-
-  async calculateLeafDensity(
-    treeParameters: TreeParameters
-  ): Promise<number[]> {
-    return this.leafDensity.calculate(treeParameters);
-  }
-
-  async calculateLeafAreaIndex(
-    treeParameters: TreeParameters
-  ): Promise<number> {
-    return this.leafAreaIndex.calculate(treeParameters);
   }
 
   calculateYear(
@@ -377,9 +363,5 @@ export default class FieldManager {
 
       this.drawTexture(this.sunlight.target.texture);
     }*/
-    
-    // this.drawTexture(this.leafDensity.target.texture);
-
-    // this.drawTexture(this.leafAreaIndex.target.texture);
   }
 }

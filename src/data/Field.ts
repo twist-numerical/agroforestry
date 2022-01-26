@@ -1,4 +1,15 @@
-export interface Field {
+export interface TreeConfiguration {
+  type: string;
+  position: [number, number];
+  scale: number;
+  rotation: number;
+  leafLength: number;
+  leafWidth: number;
+  leavesPerTwig: number;
+  maxTwigRadius: number;
+}
+
+export interface FieldConfiguration {
   geography: {
     latitude: number;
     rotation: number;
@@ -11,14 +22,5 @@ export interface Field {
     renderSize: number;
     diffuseLightCount: number;
   };
-  trees: {
-    position: [number, number];
-    type: string;
-    scale: number;
-    rotation: number;
-    leafLength: number;
-    leafWidth: number;
-    leavesPerTwig: number;
-    maxTwigRadius: number;
-  }[];
+  trees: TreeConfiguration[];
 }

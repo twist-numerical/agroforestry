@@ -16,7 +16,7 @@ label.form-label.row
       option(v-for="option of attributes.options", :value="option.value") {{ option.name }}
     number-input.form-control(
       v-else,
-      v-bind="attributes.apply ? attributes(tree) : attributes",
+      v-bind="attributes",
       :value="value",
       @input="onInput"
     )

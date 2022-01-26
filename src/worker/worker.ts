@@ -1,9 +1,20 @@
 import MessageHandler, { Message, MessageListener } from "./MessageHandler";
 import FieldManager, { RenderSettings } from "./FieldManager";
-import { TreeParameters } from "../tree/LidarTree";
-import { Field } from "../data/Field";
+import { FieldConfiguration, TreeConfiguration } from "../data/Field";
+import { WebGLRenderer } from "three";
+import LeafDensity from "../tree/LeafDensity";
+import LeafAreaIndex from "../tree/LeafAreaIndex";
+import TreeStore from "../tree/TreeStore";
 
 const messageHandler = new MessageHandler((self as any) as Worker);
+
+function lazy<T>(f: () => T) {
+  let v: T | undefined = undefined;
+  return (): T => {
+    if (v === undefined) v = f();
+    return v;
+  };
+}
 
 function progress(message: string, value: number) {
   messageHandler.postMessage("progress", {
@@ -12,32 +23,33 @@ function progress(message: string, value: number) {
   });
 }
 
-let manager: FieldManager | undefined = undefined;
-function requireManager(): FieldManager {
-  if (manager === undefined)
-    throw new Error(
-      "An action was requested without the required WorkerAction object."
-    );
-  return manager;
-}
+let renderer: WebGLRenderer | undefined = undefined;
+
+const treeStore = lazy(() => new TreeStore());
+const fieldManager = lazy(
+  () => new FieldManager(renderer, treeStore(), progress)
+);
+const leafDensity = lazy(() => new LeafDensity(renderer));
+const leafAreaIndex = lazy(() => new LeafAreaIndex(renderer));
 
 const messages: { [type: string]: MessageListener } = {
   init(canvas: HTMLCanvasElement) {
-    manager = new FieldManager(canvas, progress);
+    renderer = new WebGLRenderer({ canvas });
   },
-  loadField(field: Field) {
-    manager.loadField(field);
+  loadField(field: FieldConfiguration) {
+    fieldManager().loadField(field);
   },
   resize(data) {
-    requireManager().resize(data.width, data.height, data.pixelRatio);
+    fieldManager().resize(data.width, data.height, data.pixelRatio);
   },
   render(data: RenderSettings, message) {
-    requireManager().render(data);
+    fieldManager().render(data);
+    // fieldManager().drawTexture(leafAreaIndex().target.texture);
 
     messageHandler.reply(message, {});
   },
   year(data, message) {
-    const [sunlight, diffuseLight] = requireManager().calculateYear(
+    const [sunlight, diffuseLight] = fieldManager().calculateYear(
       data.stepSize,
       data.leafGrowth
     );
@@ -48,7 +60,7 @@ const messages: { [type: string]: MessageListener } = {
     });
   },
   moment(data, message) {
-    const moment = requireManager().calculateMoment(
+    const moment = fieldManager().calculateMoment(
       data.time,
       data.day,
       data.leafGrowth
@@ -56,16 +68,16 @@ const messages: { [type: string]: MessageListener } = {
 
     messageHandler.reply(message, moment);
   },
-  async leafDensity(data: TreeParameters, message) {
+  async leafDensity(data: TreeConfiguration, message) {
     messageHandler.reply(
       message,
-      await requireManager().calculateLeafDensity(data)
+      await leafDensity().calculate(await treeStore().loadTree(data))
     );
   },
-  async leafAreaIndex(data: TreeParameters, message) {
+  async leafAreaIndex(data: TreeConfiguration, message) {
     messageHandler.reply(
       message,
-      await requireManager().calculateLeafAreaIndex(data)
+      await leafAreaIndex().calculate(await treeStore().loadTree(data))
     );
   },
 };

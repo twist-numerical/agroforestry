@@ -150,7 +150,7 @@ import GUISetting from "./GUISetting.vue";
 import SideBySide from "./SideBySide.vue";
 import { saveAs } from "file-saver";
 import Vue from "vue";
-import { Field } from "../data/Field";
+import { FieldConfiguration, TreeConfiguration } from "../data/Field";
 import workerManager from "./workerManager";
 
 function clone(obj: any) {
@@ -175,7 +175,7 @@ export default {
     "side-by-side": SideBySide,
   },
   data() {
-    const field: Field = {
+    const field: FieldConfiguration = {
       geography: {
         latitude: 50.5,
         rotation: 15,
@@ -190,7 +190,7 @@ export default {
       },
       trees: [
         {
-          type: "oak_young",
+          type: "Oak young",
           position: [-5, -5],
           scale: 1,
           rotation: 0,
@@ -200,7 +200,7 @@ export default {
           maxTwigRadius: 0.05,
         },
         {
-          type: "oak_medium",
+          type: "Oak medium",
           position: [0, 0],
           scale: 1,
           rotation: 120,
@@ -210,7 +210,7 @@ export default {
           maxTwigRadius: 0.05,
         },
         {
-          type: "oak_old",
+          type: "Oak old",
           position: [5, 5],
           scale: 1,
           rotation: 240,
@@ -237,7 +237,7 @@ export default {
     invalidate() {
       this.updated = false;
     },
-    invalidateTree(tree: Field["trees"][0]) {
+    invalidateTree(tree: TreeConfiguration) {
       Vue.delete(tree, "leafDensityValues");
       Vue.delete(tree, "leafAreaIndex");
     },

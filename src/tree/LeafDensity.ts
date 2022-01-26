@@ -1,19 +1,16 @@
 import {
-  Box3,
   Color,
   DoubleSide,
-  Matrix4,
   MeshBasicMaterial,
   NearestFilter,
   OrthographicCamera,
   RedFormat,
   Scene,
   UnsignedByteType,
-  Vector3,
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
-import LidarTree, { TreeParameters } from "./LidarTree";
+import Tree from "./Tree";
 
 const TARGET_WIDTH = 1024;
 const TARGET_HEIGHT = 1024;
@@ -72,16 +69,14 @@ export default class LeafDensity {
     this.targetBuffer = new Uint8Array(TARGET_WIDTH * TARGET_HEIGHT);
   }
 
-  async calculate(treeParameters: TreeParameters): Promise<number[]> {
-    const tree = new LidarTree(this.material, treeParameters);
+  async calculate(tree: Tree): Promise<number[]> {
+    tree.setMaterial(this.material);
     const scene = new Scene();
     scene.add(tree);
 
-    await tree.ready;
-
     if (tree.leaves) tree.leaves.material.color = WHITE;
 
-    const {ymin, ymax, radius} = tree.boundingCylinder();
+    const { ymin, ymax, radius } = tree.boundingCylinder();
 
     const camera = new OrthographicCamera(
       -radius,

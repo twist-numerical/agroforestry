@@ -11,7 +11,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
-import LidarTree, { TreeParameters } from "./LidarTree";
+import Tree, { LeafedTreeSettings } from "./Tree";
 import { polygonHull, polygonArea } from "d3-polygon";
 
 const TARGET_WIDTH = 1024;
@@ -40,12 +40,10 @@ export default class LeafAreaIndex {
     this.targetBuffer = new Uint8Array(TARGET_WIDTH * TARGET_HEIGHT);
   }
 
-  async calculate(treeParameters: TreeParameters): Promise<number> {
-    const tree = new LidarTree(this.material, treeParameters);
+  calculate(tree: Tree): number {
+    tree.setMaterial(this.material);
     const scene = new Scene();
     scene.add(tree);
-
-    await tree.ready;
 
     if (!tree.leaves) return 0;
 
