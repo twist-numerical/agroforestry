@@ -11,9 +11,7 @@
   )
     template(v-slot:left="")
       form.h-100.position-relative.gui-padding-bottom(
-        @drop.prevent="onDrop",
-        @dragenter.prevent="onDrop",
-        @dragover.prevent="onDrop"
+        @drop.stop.prevent="onDrop"
       )
         .update-panel.p-3.pt-0.row
           .col-4.text-center
@@ -30,8 +28,6 @@
         .container-fluid.h-100.overflow-y-auto.px-4
           h1 Agroforestry
 
-          tree-overview(:trees="availableTrees")
-          
           h2 Geography
 
           .form-group
@@ -118,6 +114,7 @@
 
           hr
 
+          h4 Tree types
           tree-overview(:trees="availableTrees")
 
           hr
@@ -222,7 +219,7 @@ export default {
       },
       trees: [
         {
-          type: "Oak young",
+          id: "Oak young",
           position: [-5, -5],
           scale: 1,
           rotation: 0,
@@ -232,7 +229,7 @@ export default {
           maxTwigRadius: 0.05,
         },
         {
-          type: "Oak medium",
+          id: "Oak medium",
           position: [0, 0],
           scale: 1,
           rotation: 120,
@@ -242,7 +239,7 @@ export default {
           maxTwigRadius: 0.05,
         },
         {
-          type: "Oak old",
+          id: "Oak old",
           position: [5, 5],
           scale: 1,
           rotation: 240,
@@ -280,15 +277,15 @@ export default {
     },
     addTree() {
       this.changedField.trees.push({
-        type: "alder_medium",
+        id: "Alder medium",
         position: [0, 0],
         scale: 1,
-        rotate: 0,
+        rotation: 0,
         leafLength: 0.1,
         leafWidth: 0.1,
         leavesPerTwig: 10,
         maxTwigRadius: 0.05,
-      });
+      } as TreeConfiguration);
       this.invalidate();
     },
     async calculateLeafDensity(tree: any) {
@@ -342,8 +339,6 @@ export default {
       );
     },
     onDrop(e: DragEvent) {
-      e.stopPropagation();
-      e.preventDefault();
       if (
         e.dataTransfer &&
         e.dataTransfer.files &&

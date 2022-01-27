@@ -1,6 +1,22 @@
 import { BufferAttribute, BufferGeometry, Matrix4, Vector3 } from "three";
+import * as base64 from "../util/base64";
+import Tree from "./Tree";
 
 export type TreeSegment = { start: Vector3; end: Vector3; radius: number };
+
+function centerSegments(segments: TreeSegment[]): void {
+  const f = (a: Vector3, b: Vector3) => (a.y < b.y ? a : b);
+  const lowest = segments
+    .map(({ start, end }) => f(start, end))
+    .reduce(f, new Vector3(0, Infinity, 0))
+    .clone();
+  console.log(lowest);
+
+  segments.forEach((s) => {
+    s.start.sub(lowest);
+    s.end.sub(lowest);
+  });
+}
 
 export default class TreeGeometry extends BufferGeometry {
   readonly segments: { start: Vector3; end: Vector3; radius: number }[];
@@ -75,16 +91,39 @@ export default class TreeGeometry extends BufferGeometry {
     segments.forEach((s) => addSegment(s.start, s.end, s.radius));
     this.height = segments
       .map(({ start, end }) => Math.max(start.y, end.y))
-      .reduce((a, b) => Math.max(a, b));
+      .reduce((a, b) => Math.max(a, b), -Infinity);
 
     this.setAttribute("position", new BufferAttribute(position, 3));
     this.setIndex(index);
   }
 
-  static async readFromCSV(filePath: string): Promise<TreeGeometry> {
-    const csv = (await (await fetch(filePath)).text())
-      .split(/\s+/)
-      .map((a) => parseFloat(a));
+  asBuffer(): ArrayBuffer {
+    const data = new Float32Array(this.segments.length * 7);
+    this.segments.forEach((segment, i) => {
+      segment.start.toArray(data, 7 * i);
+      segment.end.toArray(data, 7 * i + 3);
+      data[7 * i + 6] = segment.radius;
+    });
+    return data.buffer;
+  }
+
+  static fromBuffer(buffer: ArrayBuffer) {
+    const data = new Float32Array(buffer);
+    const segments: TreeSegment[] = [];
+
+    for (let i = 0; i + 6 < data.length; i += 7) {
+      segments.push({
+        start: new Vector3().fromArray(data, i),
+        end: new Vector3().fromArray(data, i + 3),
+        radius: data[i + 6],
+      });
+    }
+
+    return new TreeGeometry(segments);
+  }
+
+  static parseCSV(csvString: string): TreeGeometry {
+    const csv = csvString.split(/\s+/).map((a) => parseFloat(a));
 
     const segments: TreeSegment[] = [];
     for (let i = 0; i + 6 < csv.length; i += 7) {
@@ -94,12 +133,40 @@ export default class TreeGeometry extends BufferGeometry {
         radius: csv[i + 6],
       });
     }
-    const offset = segments[0].start.clone();
-    segments.forEach((v) => {
-      v.start.sub(offset);
-      v.end.sub(offset);
+
+    centerSegments(segments);
+
+    return new TreeGeometry(segments);
+  }
+
+  static parseOBJ(obj: string): TreeGeometry {
+    const unknown = new Set();
+    const segments: TreeSegment[] = [];
+    const vertices: Vector3[] = [];
+    obj.split(/[\n\r]+/).forEach((line) => {
+      if (line.match(/^v\s+/i)) {
+        const [_, x, y, z] = line.split(/\s+/g, 4);
+        vertices.push(new Vector3(+x, +z, +y));
+      } else if (line.match(/^ccyl\s+/i)) {
+        const [_, si, sj, sr] = line.split(/\s+/g, 4);
+        let [i, j] = [+si, +sj];
+        if (i < 0) i += vertices.length;
+        if (j < 0) j += vertices.length;
+        segments.push({
+          start: vertices[i],
+          end: vertices[j],
+          radius: +sr,
+        });
+      } else if (line.match(/^[#!]/i)) {
+      } else {
+        unknown.add(line.split(/\s/, 1)[0]);
+      }
     });
 
+    centerSegments(segments);
+
+    console.warn("Unknown lines in obj: " + [...unknown].join(", "));
+    if (segments.length == 0) console.warn("No segments found in obj.");
     return new TreeGeometry(segments);
   }
 }

@@ -92,24 +92,22 @@
 </template>
 
 <script lang="ts">
-import MessageHandler from "../worker/MessageHandler";
 import Statistics from "./Statistics";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { PerspectiveCamera } from "three";
 import LeafGraph from "./LeafGraph.vue";
 import UploadFile from "./UploadFile.vue";
 import { saveAs } from "file-saver";
-import { clamp, map, range } from "../util";
+import { clamp, map, range } from "../util/itertools";
 import Accordion from "./Accordion.vue";
 import NumberInput from "./NumberInput.vue";
 import workerManager from "./workerManager";
 import { RenderSettings } from "../worker/FieldManager";
 
-function rafPromise(): Promise<void> {
-  let _resolve: () => void;
-  const p = new Promise<void>((resolve) => (_resolve = resolve));
-  requestAnimationFrame(_resolve);
-  return p;
+function rafPromise(mspt = 0): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => requestAnimationFrame(() => resolve()), mspt);
+  });
 }
 
 function getOrDefault<T>(value: T | undefined, def: T): T {
@@ -237,7 +235,7 @@ export default {
           this.controls.update();
           await this.render();
           this.stats.endFrame();
-          await rafPromise();
+          await rafPromise(1000 / 30); // 30 fps
         }
       })();
     },

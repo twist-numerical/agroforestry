@@ -74,7 +74,7 @@ export default class MessageHandler {
 
   reply(
     originalMessage: Message,
-    data: any,
+    data?: any,
     transfer: Transferable[] = []
   ): Message {
     const message: Message = {

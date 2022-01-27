@@ -18,7 +18,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { constant, range } from "../util";
+import { constant, range } from "../util/itertools";
 import DiffuseLight from "../photosynthesis/DiffuseLight";
 import Tree from "../tree/Tree";
 import Photosynthesis from "../photosynthesis/Photosynthesis";

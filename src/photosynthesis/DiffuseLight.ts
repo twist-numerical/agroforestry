@@ -10,7 +10,7 @@ import {
 import * as THREE from "three";
 import UVLight from "./UVLight";
 import Photosynthesis from "./Photosynthesis";
-import { clamp } from "../util";
+import { clamp } from "../util/itertools";
 
 const eye = new Vector3(0, 1, 0);
 const center = new Vector3(0, 0, 0);

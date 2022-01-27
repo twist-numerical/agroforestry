@@ -1,4 +1,5 @@
 import * as math from "mathjs";
+import { AvailableTree } from "../data/AvailableTree";
 
 function clamp(value: number, min: number, max: number) {
   return value < min ? min : value > max ? max : value;
@@ -144,15 +145,17 @@ export default function(guiElement: any) {
       },
       {
         name: "Type",
-        value: "type",
+        value: "id",
         invalidateTree: true,
         type: "select",
         attributes() {
           return {
-            options: guiElement.availableTrees.map(({ name }) => ({
-              name: name,
-              value: name,
-            })),
+            options: guiElement.availableTrees.map(
+              ({ name, id }: AvailableTree) => ({
+                name: name,
+                value: id,
+              })
+            ),
           };
         },
       },

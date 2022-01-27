@@ -1,5 +1,5 @@
 export interface TreeConfiguration {
-  type: string;
+  id: string;
   position: [number, number];
   scale: number;
   rotation: number;

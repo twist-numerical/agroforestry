@@ -49,14 +49,22 @@ const messages: { [type: string]: MessageListener } = {
   availableTrees(_, message) {
     messageHandler.reply(message, treeStore.availableTrees);
   },
-  renameTree({ from, to }: { from: string; to: string }) {
-    treeStore.rename(from, to);
+  renameTree({ id, newName }: { id: string; newName: string }) {
+    treeStore.rename(id, newName);
+  },
+  deleteTree(id: string) {
+    treeStore.deleteTree(id);
   },
   render(data: RenderSettings, message) {
     fieldManager().render(data);
     // fieldManager().drawTexture(leafAreaIndex().target.texture);
 
-    messageHandler.reply(message, {});
+    messageHandler.reply(message);
+  },
+  async uploadTree(data: { name: string; data: ArrayBuffer }, message) {
+    await treeStore.addTree(data.name, data.data);
+
+    messageHandler.reply(message);
   },
   year(data, message) {
     const [sunlight, diffuseLight] = fieldManager().calculateYear(
