@@ -27,10 +27,12 @@ on-drop(@file="uploadNewTree")
         td {{ tree.height === undefined ? '?' : tree.height.toFixed(1) + 'm' }}
         td {{ tree.segments === undefined ? '?' : tree.segments }}
       tr(v-for="l of loading")
+        td
         td ... {{ l }}
         td
         td
       tr
+        td
         td(colspan="3")
           upload-file.btn.btn-link.py-0(@file="uploadNewTree", accept="*") 
             | Upload new tree type
@@ -68,7 +70,7 @@ export default {
     async uploadNewTree(tree: File) {
       this.loading.push(tree.name);
       const buffer = await tree.arrayBuffer();
-      await workerManager.onReply(
+      const reply = await workerManager.onReply(
         workerManager.postMessage(
           "uploadTree",
           { name: tree.name, data: buffer },
@@ -76,6 +78,7 @@ export default {
         )
       );
       this.loading = this.loading.filter((v: string) => v != tree.name);
+      if (reply.data.error) this.$emit("error", { message: reply.data.error });
     },
     onDrop(e: DragEvent) {
       e.stopPropagation();

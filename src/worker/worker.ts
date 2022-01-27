@@ -62,9 +62,12 @@ const messages: { [type: string]: MessageListener } = {
     messageHandler.reply(message);
   },
   async uploadTree(data: { name: string; data: ArrayBuffer }, message) {
-    await treeStore.addTree(data.name, data.data);
-
-    messageHandler.reply(message);
+    try {
+      await treeStore.addTree(data.name, data.data);
+      messageHandler.reply(message);
+    } catch (e) {
+      messageHandler.reply(message, { error: (e as Error).message });
+    }
   },
   year(data, message) {
     const [sunlight, diffuseLight] = fieldManager().calculateYear(

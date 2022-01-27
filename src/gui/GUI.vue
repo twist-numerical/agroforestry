@@ -122,7 +122,7 @@
           .flex-grow-1.position-relative.m-0
             .position-absolute.container-fluid.h-100.overflow-y-auto.p-3
               h2 Tree types
-              tree-overview(:trees="availableTrees")
+              tree-overview(:trees="availableTrees", @error="onError")
 
         template(v-slot:references="")
           .flex-grow-1.position-relative.m-0
@@ -315,6 +315,9 @@ export default {
         )
       ).data as number;
       Vue.set(tree, "leafAreaIndex", leafAreaIndex);
+    },
+    onError(e: { message: string }) {
+      this.error(e.message);
     },
     error(message: string, time: number = 5000) {
       this.errorMessage = message;

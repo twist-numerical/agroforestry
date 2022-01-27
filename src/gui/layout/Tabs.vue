@@ -1,5 +1,5 @@
 <template lang="pug">
-.d-flex.flex-column
+div
   ul.nav.nav-tabs.px-2.pt-2
     li.nav-item(v-for="item, i of items")
       button.nav-link(
@@ -9,7 +9,7 @@
       )
         slot(name="title", v-bind:item="item")
   template(v-for="item, i of items")
-    slot.flex-grow-1(:name="item.slot", v-if="i == selected")
+    slot(:name="item.slot", v-if="i == selected")
 </template>
 
 <script lang="ts">
