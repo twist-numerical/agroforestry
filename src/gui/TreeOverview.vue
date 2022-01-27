@@ -39,7 +39,7 @@ on-drop(@file="uploadNewTree")
 <script lang="ts">
 import workerManager from "./workerManager";
 import UploadFile from "./UploadFile.vue";
-import OnDrop from "./OnDrop.vue";
+import OnDrop from "./layout/OnDrop.vue";
 import { AvailableTree } from "../data/AvailableTree";
 
 export default {

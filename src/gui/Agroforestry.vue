@@ -99,7 +99,7 @@ import LeafGraph from "./LeafGraph.vue";
 import UploadFile from "./UploadFile.vue";
 import { saveAs } from "file-saver";
 import { clamp, map, range } from "../util/itertools";
-import Accordion from "./Accordion.vue";
+import Accordion from "./layout/Accordion.vue";
 import NumberInput from "./NumberInput.vue";
 import workerManager from "./workerManager";
 import { RenderSettings } from "../worker/FieldManager";
