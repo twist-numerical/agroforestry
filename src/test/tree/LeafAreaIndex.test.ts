@@ -1,7 +1,7 @@
 import test from "ava";
-import { WebGLRenderer } from "three";
 import LeafAreaIndex from "../../tree/LeafAreaIndex";
 import TreeStore from "../../tree/TreeStore";
+import createRenderer from "../createRenderer";
 import almostEqual from "../util/almostEqual";
 
 const trees = [
@@ -80,13 +80,7 @@ const trees = [
 ];
 
 test("LeafAreaIndex", async (t) => {
-  const gl = require("gl")(1024, 1024);
-  const renderer = new WebGLRenderer({
-    canvas: { addEventListener() {} },
-    context: gl,
-  });
-  const lai = new LeafAreaIndex(renderer);
-  console.log(renderer.extensions.get("OES_texture_float"))
+  const lai = new LeafAreaIndex(createRenderer());
 
   const store = new TreeStore();
   await Promise.all(
@@ -98,8 +92,10 @@ test("LeafAreaIndex", async (t) => {
         rotation: 0,
       });
 
+      const got = lai.calculate(tree);
       t.truthy(
-        almostEqual(treeConfig.leafAreaIndex, lai.calculate(tree), 0.01)
+        almostEqual(treeConfig.leafAreaIndex, got, 0.1),
+        `Error on ${treeConfig.id}: ${got}`
       );
     })
   );
