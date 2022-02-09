@@ -75,27 +75,7 @@ export default class Tree extends Object3D {
     );
   }
 
-  boundingCylinder() {
-    let radius = 0;
-    let ymin = Infinity;
-    let ymax = -Infinity;
-
-    this.treeGeometry.segments.forEach((segment) => {
-      [segment.start, segment.end].forEach((v) => {
-        if (!isNaN(v.x) && !isNaN(v.z)) {
-          radius = Math.max(radius, Math.hypot(v.x, v.z) + segment.radius);
-        }
-        if (!isNaN(v.y)) {
-          ymin = Math.min(ymin, v.y);
-          ymax = Math.max(ymax, v.y);
-        }
-      });
-    });
-
-    radius *= 1.05;
-    ymax += (ymax - ymin) * 0.05;
-    ymin -= (ymax - ymin) * 0.05;
-
-    return { radius, ymin, ymax };
+  boundingCylinder(): { radius: number; ymin: number; ymax: number } {
+    return this.treeGeometry.boundingCylinder();
   }
 }

@@ -5,14 +5,16 @@ import {
   NearestFilter,
   OrthographicCamera,
   RedFormat,
+  RGBAFormat,
   Scene,
   UnsignedByteType,
   Vector3,
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
-import Tree, { LeafedTreeSettings } from "./Tree";
-import { polygonHull, polygonArea } from "d3-polygon";
+import Tree from "./Tree";
+import polygonHull from "../../node_modules/d3-polygon/src/hull";
+import polygonArea from "../../node_modules/d3-polygon/src/area";
 
 const TARGET_WIDTH = 1024;
 const TARGET_HEIGHT = 1024;
@@ -27,7 +29,7 @@ export default class LeafAreaIndex {
 
   constructor(renderer: WebGLRenderer) {
     this.target = new WebGLRenderTarget(TARGET_WIDTH, TARGET_HEIGHT, {
-      format: RedFormat,
+      format: RGBAFormat,
       type: UnsignedByteType,
       minFilter: NearestFilter,
       magFilter: NearestFilter,
@@ -37,7 +39,7 @@ export default class LeafAreaIndex {
       color: WHITE,
     });
     this.renderer = renderer;
-    this.targetBuffer = new Uint8Array(TARGET_WIDTH * TARGET_HEIGHT);
+    this.targetBuffer = new Uint8Array(4 * TARGET_WIDTH * TARGET_HEIGHT);
   }
 
   calculate(tree: Tree): number {
@@ -84,8 +86,10 @@ export default class LeafAreaIndex {
     let k = 0;
     for (let j = 0.5; j < TARGET_HEIGHT; ++j)
       for (let i = 0.5; i < TARGET_WIDTH; ++i) {
-        if (!!this.targetBuffer[k++])
+        if (!!this.targetBuffer[k]) {
           points.push([scaleWidth * i, scaleHeight * j]);
+        }
+        k += 4;
       }
     const groundArea = polygonArea(polygonHull(points));
 

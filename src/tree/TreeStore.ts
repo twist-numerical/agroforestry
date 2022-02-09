@@ -1,12 +1,23 @@
-import { string } from "mathjs";
 import { Material } from "three";
 import { AvailableTree } from "../data/AvailableTree";
 import Tree, { LeafedTreeSettings } from "./Tree";
 import TreeGeometry from "./TreeGeometry";
 //@ts-ignore
 import treeFiles from "./trees/*.csv";
-import { openDB, DBSchema, IDBPDatabase } from "idb";
-import { offset } from "@popperjs/core";
+import * as idb from "idb";
+import crossFetch from "cross-fetch";
+
+let fetch = crossFetch;
+if (process.env.NODE_ENV === "test") {
+  const fs = require("fs").promises;
+  fetch = (async (path: string): Promise<{ text: () => Promise<string> }> => {
+    return {
+      text() {
+        return fs.readFile(path, "utf8");
+      },
+    };
+  }) as any;
+}
 
 const precomputed = {
   "Alder medium": [11.2, 3811],
@@ -22,7 +33,7 @@ const precomputed = {
   "Oak young": [5.3, 1367],
 };
 
-interface TreeStoreSchema extends DBSchema {
+interface TreeStoreSchema extends idb.DBSchema {
   trees: {
     value: {
       id: string;
@@ -61,17 +72,19 @@ export default class TreeStore {
     [id: string]: TreeGeometryData;
   } = {};
 
-  db: Promise<IDBPDatabase<TreeStoreSchema>> = openDB<TreeStoreSchema>(
-    "tree-store",
-    1,
-    {
-      upgrade(db) {
-        db.createObjectStore("trees", {
-          keyPath: "id",
-        });
-      },
+  db: Promise<idb.IDBPDatabase<TreeStoreSchema>> = (async () => {
+    try {
+      return idb.openDB<TreeStoreSchema>("tree-store", 1, {
+        upgrade(db) {
+          db.createObjectStore("trees", {
+            keyPath: "id",
+          });
+        },
+      });
+    } catch (e) {
+      return new Promise(() => {});
     }
-  );
+  })();
 
   listeners: UpdateListener[] = [];
 
@@ -87,7 +100,10 @@ export default class TreeStore {
     this.updated();
   }
 
-  async loadTreeGeometryFromCSV(path: string, id: string) {
+  async loadTreeGeometryFromCSV(
+    path: string,
+    id: string
+  ): Promise<TreeGeometry> {
     let tree = this.treeGeometries[id];
     if (tree === undefined) {
       const promise = (async () =>
@@ -122,17 +138,19 @@ export default class TreeStore {
     });
   }
 
-  async localLoadTreeGeometry(id: string) {
+  async localLoadTreeGeometry(id: string): Promise<TreeGeometry> {
     const db = await this.db;
 
     const stored = await db.get("trees", id);
     if (!stored) return undefined;
 
-    this.treeGeometries[id] = dbValueToTreeGeometryData(stored);
+    const geometryData = dbValueToTreeGeometryData(stored);
+    this.treeGeometries[id] = geometryData;
     this.updated();
+    return await geometryData.promise;
   }
 
-  async loadTreeGeometry(id: string) {
+  async loadTreeGeometry(id: string): Promise<TreeGeometry> {
     if (this.treeGeometries[id]) {
       return await this.treeGeometries[id].promise;
     } else if (treeFiles[id] !== undefined) {

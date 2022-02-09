@@ -1,6 +1,4 @@
 import { BufferAttribute, BufferGeometry, Matrix4, Vector3 } from "three";
-import * as base64 from "../util/base64";
-import Tree from "./Tree";
 
 export type TreeSegment = { start: Vector3; end: Vector3; radius: number };
 
@@ -10,7 +8,6 @@ function centerSegments(segments: TreeSegment[]): void {
     .map(({ start, end }) => f(start, end))
     .reduce(f, new Vector3(0, Infinity, 0))
     .clone();
-  console.log(lowest);
 
   segments.forEach((s) => {
     s.start.sub(lowest);
@@ -168,5 +165,29 @@ export default class TreeGeometry extends BufferGeometry {
     console.warn("Unknown lines in obj: " + [...unknown].join(", "));
     if (segments.length == 0) console.warn("No segments found in obj.");
     return new TreeGeometry(segments);
+  }
+
+  boundingCylinder(): { radius: number; ymin: number; ymax: number } {
+    let radius = 0;
+    let ymin = Infinity;
+    let ymax = -Infinity;
+
+    this.segments.forEach((segment) => {
+      [segment.start, segment.end].forEach((v) => {
+        if (!isNaN(v.x) && !isNaN(v.z)) {
+          radius = Math.max(radius, Math.hypot(v.x, v.z) + segment.radius);
+        }
+        if (!isNaN(v.y)) {
+          ymin = Math.min(ymin, v.y);
+          ymax = Math.max(ymax, v.y);
+        }
+      });
+    });
+
+    radius *= 1.05;
+    ymax += (ymax - ymin) * 0.05;
+    ymin -= (ymax - ymin) * 0.05;
+
+    return { radius, ymin, ymax };
   }
 }
