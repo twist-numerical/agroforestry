@@ -94,7 +94,7 @@ test("LeafAreaIndex", async (t) => {
 
       const got = lai.calculate(tree);
       t.truthy(
-        almostEqual(treeConfig.leafAreaIndex, got, 0.1),
+        almostEqual(treeConfig.leafAreaIndex, got, 0.05),
         `Error on ${treeConfig.id}: ${got}`
       );
     })

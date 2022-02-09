@@ -5,28 +5,35 @@ import {
   ImageBitmapLoader,
   InstancedBufferAttribute,
   InstancedMesh,
+  MaterialParameters,
   Matrix4,
   MeshBasicMaterial,
   PlaneGeometry,
   ShaderMaterial,
+  ShaderMaterialParameters,
 } from "three";
 import Photosynthesis from "./Photosynthesis";
 import PhotosynthesisMesh from "./PhotosynthesisMesh";
 // @ts-ignore
 import digitsImage from "./digits.png";
 
-const loader = new ImageBitmapLoader();
-loader.setOptions({ imageOrientation: "flipY" });
-const digitsBitmap = new Promise((r) =>
-  loader.load(digitsImage, (bitmap) => {
-    r(bitmap);
-  })
-);
+let digitsBitmap;
+if (process.env.NODE_ENV === "test") {
+  digitsBitmap = new Promise(() => {});
+} else {
+  const loader = new ImageBitmapLoader();
+  loader.setOptions({ imageOrientation: "flipY" });
+  digitsBitmap = new Promise((r) =>
+    loader.load(digitsImage, (bitmap) => {
+      r(bitmap);
+    })
+  );
+}
 
 const black = new Color("black");
 
 class SensorGridMaterial extends ShaderMaterial {
-  constructor(settings) {
+  constructor(settings: ShaderMaterialParameters) {
     super({
       uniforms: {
         digits: { value: 0 },

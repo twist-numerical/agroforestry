@@ -5,7 +5,7 @@
   "scripts": {
     "start": "parcel src/index.html --hmr-port 12345",
     "build": "parcel build --no-source-maps --public-url . src/index.html",
-    "test": "parcel build --no-minify --public-url \"${PWD}/dist-test\" --out-dir dist-test --target node src/test/**/*.test.ts && ava dist-test"
+    "test": "parcel build --no-minify --public-url \"${PWD}/dist-test\" --out-dir dist-test --target node src/test/**/*.test.ts && ava --no-worker-threads dist-test"
   },
   "author": "",
   "license": "ISC",

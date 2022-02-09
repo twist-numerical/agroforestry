@@ -92,7 +92,7 @@ export default class FieldManager {
   constructor(
     public renderer: WebGLRenderer,
     public treeStore: TreeStore,
-    progress: (message: string, value: number) => void
+    progress: (message: string, value: number) => void = () => {}
   ) {
     this.progress = progress;
     this.photosynthesis = new Photosynthesis(this.renderer);
@@ -357,11 +357,11 @@ export default class FieldManager {
     this.renderer.setViewport(0, 0, this.width, this.height);
     this.renderer.render(this.scene, this.camera);
 
-    /*{
+    {
       this.indicatorsVisible = false;
       this.photosynthesis.calculate(this.scene, [this.sunlight]);
 
       this.drawTexture(this.sunlight.target.texture);
-    }*/
+    }
   }
 }

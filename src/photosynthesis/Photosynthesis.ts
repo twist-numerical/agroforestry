@@ -11,6 +11,8 @@ import {
   MeshBasicMaterial,
   Points,
   RawShaderMaterial,
+  RedFormat,
+  RGBAFormat,
   Scene,
   Texture,
   WebGLRenderer,
@@ -24,6 +26,13 @@ const black = new Color("black");
 const blockWidth = 512;
 const blockHeight = 512;
 const summaryWidth = 256;
+let renderTargetStride = 1;
+let renderTargetFormat = RedFormat;
+
+if (process.env.NODE_ENV === "test") {
+  renderTargetStride = 4;
+  renderTargetFormat = RGBAFormat;
+}
 
 const summaryMaterial = new RawShaderMaterial({
   side: THREE.DoubleSide,
@@ -40,7 +49,7 @@ const summaryMaterial = new RawShaderMaterial({
     data: { value: 0 },
     pixelArea: { value: 1 },
   },
-  vertexShader: `#version 300 es
+  vertexShader: `
 precision highp float;
 precision highp int;
 
@@ -52,27 +61,27 @@ uniform vec2 canvasSize;
 uniform float pixelArea;
 uniform sampler2D data;
 
-in vec2 position;
+attribute vec2 position;
 
-out float value;
+varying float value;
 
 float round(float f) {
   return floor(f + 0.5);
 }
 
-uint getID(vec2 rg) {
-  return uint(round(255.0*rg.r)) + uint(round(rg.g * 255.0)) * 256u;
+int getID(vec2 rg) {
+  return int(round(255.0*rg.r)) + int(round(rg.g * 255.0)) * 256;
 }
 
 void main()	{
   vec2 p = (dataOffset + position)/dataSize;
-  vec3 point = texture(data, p).rgb;
-  uint id = getID(point.rg);
+  vec3 point = texture2D(data, p).rgb;
+  int id = getID(point.rg);
 
   value = point.b * pixelArea;
 
-  uint y = id / ${summaryWidth}u;
-  uint x = id - y * ${summaryWidth}u;
+  int y = id / ${summaryWidth};
+  int x = id - y * ${summaryWidth};
   if(p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) {
     value = 0.0;
   }
@@ -81,24 +90,36 @@ void main()	{
   gl_Position = vec4((vec2(x, y) + 0.5)/canvasSize * 2.0 - 1.0, 0.0, 1.0);
 }
 `,
-  fragmentShader: `#version 300 es
+  fragmentShader: `
 precision highp float;
 
-in float value;
-out vec4 fragColor;
+varying float value;
 
 void main()	{
-  fragColor = vec4(value, 0.0, 0.0, 1.0);
+  gl_FragColor = vec4(value, 0.0, 0.0, 1.0);
 }
 `,
 });
 
+function hasAnyExtension(renderer: WebGLRenderer, extensions: string[]) {
+  for (const e of extensions) {
+    if (renderer.extensions.has(e)) return true;
+  }
+  return false;
+}
+
 function mostPreciseSupportedType(renderer: WebGLRenderer) {
-  if (renderer.extensions.has("EXT_color_buffer_float")) {
+  if (
+    hasAnyExtension(renderer, [
+      "EXT_color_buffer_float",
+      "WEBGL_color_buffer_float",
+      "OES_texture_float",
+    ])
+  ) {
     // TODO detect real capabilities
     console.log("Support for FLOAT");
     return THREE.FloatType;
-  } else if (renderer.extensions.has("EXT_color_buffer_half_float")) {
+  } else if (hasAnyExtension(renderer, ["EXT_color_buffer_half_float"])) {
     console.log("Only support for HALF_FLOAT");
     return THREE.HalfFloatType;
   } else {
@@ -156,7 +177,7 @@ export default class Photosynthesis {
 
   newDataRenderTarget(width: number, height: number) {
     const target = new WebGLRenderTarget(width, height, {
-      format: THREE.RedFormat,
+      format: renderTargetFormat,
       type: this.floatType,
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
@@ -215,11 +236,17 @@ export default class Photosynthesis {
     this.summaryTarget = this.newDataRenderTarget(summaryWidth, rows);
 
     if (this.floatType == FloatType) {
-      this.summaryBuffer = new Float32Array(summaryWidth * rows);
+      this.summaryBuffer = new Float32Array(
+        renderTargetStride * summaryWidth * rows
+      );
     } else if (this.floatType == HalfFloatType) {
-      this.summaryBuffer = new Uint16Array(summaryWidth * rows);
+      this.summaryBuffer = new Uint16Array(
+        renderTargetStride * summaryWidth * rows
+      );
     } else {
-      this.summaryBuffer = new Uint8Array(summaryWidth * rows);
+      this.summaryBuffer = new Uint8Array(
+        renderTargetStride * summaryWidth * rows
+      );
     }
   }
 
@@ -318,11 +345,21 @@ export default class Photosynthesis {
 
     this.renderer.setRenderTarget(null);
 
+    const processSummary = <T>(transform: (v: number) => T): T[] => {
+      const data = [];
+      for (let i = 0; i < this.__nextID; ++i) {
+        data.push(transform(this.summaryBuffer[renderTargetStride * i]));
+      }
+      return data;
+    };
+
     if (this.floatType === HalfFloatType) {
       return [...this.summaryBuffer.slice(0, this.__nextID)].map(
         parseHalfFloat
       );
     }
-    return [...this.summaryBuffer.slice(0, this.__nextID)];
+    return processSummary(
+      this.floatType === HalfFloatType ? parseHalfFloat : (v) => v
+    );
   }
 }

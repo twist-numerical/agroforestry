@@ -5,7 +5,6 @@ export default function createRenderer(
   height: number = 1080
 ): WebGLRenderer {
   const gl = require("gl")(width, height);
-  gl.getExtension("OES_texture_float");
   const canvas = {
     width,
     height,
@@ -17,7 +16,9 @@ export default function createRenderer(
     },
   };
   gl.canvas = canvas;
-  return new WebGLRenderer({
+  const renderer = new WebGLRenderer({
     canvas: canvas,
   });
+  renderer.extensions.get("OES_texture_float");
+  return renderer;
 }
