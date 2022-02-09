@@ -18,7 +18,7 @@ const emptyField: FieldConfiguration = {
   sensors: {
     count: [4, 4],
     size: [4, 4],
-    diffuseLightCount: 50,
+    diffuseLightCount: 25,
     renderSize: 1024,
   },
   trees: [],
@@ -29,6 +29,7 @@ test("FieldManager sunlight", async (t) => {
 
   manager.loadField(emptyField);
 
+  t.timeout(1000 * 60, "The light calculation took more than one minute.");
   const moment = manager.calculateMoment(12, 0, 0);
 
   moment[1]
