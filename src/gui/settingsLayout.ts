@@ -44,7 +44,7 @@ export default function(guiElement: any) {
         name: "Render resolution",
         value: "renderSize",
         info:
-          "To calculate incomming light the view for each of the light sources is rendered to a temporary image. This parameter expresses the size of this image in pixels. The bigger this value, the more accurate the calculations, but they take more time.",
+          "To calculate incoming light the view for each of the light sources is rendered to a temporary image. This parameter expresses the size of this image in pixels. The bigger this value, the more accurate the calculations, but they take more time.",
         attributes: {
           min: 0,
           max: 1,
