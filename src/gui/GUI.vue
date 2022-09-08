@@ -218,7 +218,7 @@ export default {
       geography: {
         latitude: 50.5,
         rotation: 15,
-        inclination: 5,
+        inclination: 0,
         inclinationRotation: 45,
       },
       sensors: {
