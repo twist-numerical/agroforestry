@@ -142,7 +142,7 @@ export default {
       momentSettings: {
         timeOfDay: 12,
         day: 180,
-        leafGrowth: 0.7,
+        leafGrowth: 1,
       },
       yearSettings: {
         timeStep: 120,
