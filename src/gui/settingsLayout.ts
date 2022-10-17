@@ -135,15 +135,6 @@ export default function(guiElement: any) {
         },
       },
       {
-        name: "Rotation",
-        value: "rotation",
-        attributes: {
-          min: 0,
-          max: 360,
-          precision: 1,
-        },
-      },
-      {
         name: "Type",
         value: "id",
         invalidateTree: true,
@@ -202,6 +193,54 @@ export default function(guiElement: any) {
         attributes: {
           min: 0,
           max: 0.5,
+          precision: 2,
+        },
+      },
+      ,
+    ],
+    treeline: [
+      {
+        name: "Rotation",
+        value: "rotation",
+        attributes: {
+          min: 0,
+          max: 360,
+          precision: 1,
+        },
+      },
+      {
+        name: "xCount",
+        value: "xCount",
+        attributes: {
+          min: 1,
+          max: 20,
+          precision: 0,
+        },
+      },
+      {
+        name: "xDistance",
+        value: "xDistance",
+        attributes: {
+          min: 0,
+          max: 10,
+          precision: 2,
+        },
+      },
+      {
+        name: "yCount",
+        value: "yCount",
+        attributes: {
+          min: 1,
+          max: 5,
+          precision: 0,
+        },
+      },
+      {
+        name: "yDistance",
+        value: "yDistance",
+        attributes: {
+          min: 0,
+          max: 10,
           precision: 2,
         },
       },

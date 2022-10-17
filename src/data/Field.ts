@@ -9,6 +9,14 @@ export interface TreeConfiguration {
   maxTwigRadius: number;
 }
 
+export type TreeLineConfiguration = TreeConfiguration & {
+  treeline: boolean;
+  xCount: number;
+  xDistance: number;
+  yCount: number;
+  yDistance: number;
+};
+
 export interface FieldConfiguration {
   geography: {
     latitude: number;
@@ -22,5 +30,5 @@ export interface FieldConfiguration {
     renderSize: number;
     diffuseLightCount: number;
   };
-  trees: TreeConfiguration[];
+  trees: TreeLineConfiguration[];
 }

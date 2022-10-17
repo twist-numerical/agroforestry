@@ -27,7 +27,7 @@ import Sun from "../photosynthesis/Sun";
 import Sunlight from "../photosynthesis/Sunlight";
 import { DiffuseLightIndicator } from "../photosynthesis/DiffuseLightIndicator";
 import Compass from "./Compass";
-import { FieldConfiguration } from "../data/Field";
+import { FieldConfiguration, TreeConfiguration } from "../data/Field";
 import TreeStore from "../tree/TreeStore";
 
 const TREE_COLOR = new Color("brown");
@@ -85,7 +85,7 @@ export default class FieldManager {
   height: number = 300;
   progress: (message: string, value: number) => void;
   drawTexture: (texture: Texture) => void;
-  trees: Tree[] = [];
+  trees: [number, Tree][] = [];
   treeGroup = new Group();
   parameters: FieldConfiguration;
 
@@ -148,19 +148,18 @@ export default class FieldManager {
       !highlight || highlight.length == 0
         ? [TREE_COLOR, LEAF_COLOR]
         : [TREE_COLOR_FADED, LEAF_COLOR_FADED];
-    this.trees.forEach((tree) => {
-      if (tree.tree)
-        (tree.tree.material as MeshBasicMaterial).color.set(defaultTreeColor);
-      if (tree.leaves) tree.leaves.material.color.set(defaultLeafColor);
-    });
-    if (highlight)
-      highlight.forEach((i) => {
-        const tree = this.trees[i];
-        if (!tree) return;
+
+    this.trees.forEach(([index, tree]) => {
+      if (highlight.indexOf(index) >= 0) {
         if (tree.tree)
           (tree.tree.material as MeshBasicMaterial).color.set(TREE_COLOR);
         if (tree.leaves) tree.leaves.material.color.set(LEAF_COLOR);
-      });
+      } else {
+        if (tree.tree)
+          (tree.tree.material as MeshBasicMaterial).color.set(defaultTreeColor);
+        if (tree.leaves) tree.leaves.material.color.set(defaultLeafColor);
+      }
+    });
   }
 
   setSettings({ seconds, leafGrowth, camera, highlightTrees }: RenderSettings) {
@@ -230,35 +229,73 @@ export default class FieldManager {
     this.diffuseLightIndicator.setLight(this.diffuseLight, 0.8 * fieldDiameter);
 
     while (this.trees.length) {
-      this.trees.pop().dispose();
+      this.trees.pop()[1].dispose();
     }
 
     const treeMaterial = new MeshBasicMaterial({
       color: TREE_COLOR,
     });
-    for (const treeParameters of parameters.trees) {
-      (async () => {
-        const tree = await this.treeStore.loadTree(
-          {
-            ...treeParameters,
-            leafColor: LEAF_COLOR,
-          },
-          treeMaterial.clone()
-        );
-        const [x, y] = treeParameters.position;
-        tree.position.set(x, 0, y);
-        tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
-        tree.rotateY(d2r(getOrDefault(treeParameters.rotation, 0)));
-        const scale = treeParameters.scale;
-        tree.scale.set(scale, scale, scale);
-        this.trees.push(tree);
-        this.ground.add(tree);
-      })();
+    const addTree = async (treeConfig: TreeConfiguration, index: number) => {
+      const tree = await this.treeStore.loadTree(
+        {
+          ...treeConfig,
+          leafColor: LEAF_COLOR,
+        },
+        treeMaterial.clone()
+      );
+      const [x, y] = treeConfig.position;
+      tree.position.set(x, 0, y);
+      tree.setRotationFromAxisAngle(inclinationAxis, -inclination);
+      tree.rotateY(d2r(getOrDefault(treeConfig.rotation, 0)));
+      const scale = treeConfig.scale;
+      tree.scale.set(scale, scale, scale);
+      this.trees.push([index, tree]);
+      this.ground.add(tree);
+    };
+    let index = 0;
+    for (const treeLineParameters of parameters.trees) {
+      let {
+        xCount,
+        yCount,
+        xDistance,
+        yDistance,
+        treeline,
+        rotation,
+        position: [cx, cy],
+        ...treeParameters
+      } = treeLineParameters;
+
+      if (!treeline) {
+        rotation = 0;
+        xCount = 1;
+        yCount = 1;
+        xDistance = 0;
+        yDistance = 0;
+      }
+      const alpha = d2r(rotation || 0);
+      for (let i = 0; i < xCount; i++) {
+        for (let j = 0; j < yCount; j++) {
+          const dx = (0.5 + i - xCount / 2) * xDistance;
+          const dy = (0.5 + j - yCount / 2) * yDistance;
+          addTree(
+            {
+              ...treeParameters,
+              position: [
+                cx + Math.cos(alpha) * dx + Math.sin(alpha) * dy,
+                cy - Math.sin(alpha) * dx + Math.cos(alpha) * dy,
+              ],
+              rotation: 360 * Math.random(),
+            },
+            index
+          );
+        }
+      }
+      ++index;
     }
   }
 
   setGrowth(growth: number) {
-    this.trees.forEach((tree) => {
+    this.trees.forEach(([index, tree]) => {
       tree.setGrowth(growth);
     });
   }

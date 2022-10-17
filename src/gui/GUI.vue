@@ -55,6 +55,8 @@
 
               h2 Trees
 
+              button.btn.btn-link(type="button", @click="() => addTree()") Add new tree
+
               .form-group(
                 v-for="(tree, index) of changedField.trees",
                 @mouseover="() => { highlightTree = index; }",
@@ -102,6 +104,24 @@
                       type="button",
                       @click.preventDefault="() => calculateLeafAreaIndex(tree)"
                     ) Calculate
+                label.form-label.row
+                  gui-label.col-4 Tree line
+                  .col-8.input-group-sm
+                    input.form-check-input(
+                      type="checkbox",
+                      v-model="tree.treeline",
+                      @input="() => { invalidate(); }"
+                    )
+                div(v-if="tree.treeline")
+                  gui-setting(
+                    v-for="setting of settingsLayout.treeline",
+                    :attributes="setting.attributes.apply ? setting.attributes(tree) : setting.attributes",
+                    :name="setting.name",
+                    :type="setting.type",
+                    :info="setting.info",
+                    v-model="tree[setting.value]",
+                    @input="() => { invalidate(); }"
+                  )
                 .clearfix
                   button.float-end.btn.btn-link.btn-sm(
                     type="button",
@@ -109,7 +129,6 @@
                   ) Remove
                 .col-12.float-none
                   hr
-              button.btn.btn-link(type="button", @click="() => addTree()") Add new tree
 
             button.update-button.btn.btn-primary.btn-lg(
               type="button",
@@ -161,7 +180,11 @@ import GUISetting from "./GUISetting.vue";
 import SideBySide from "./layout/SideBySide.vue";
 import { saveAs } from "file-saver";
 import Vue from "vue";
-import { FieldConfiguration, TreeConfiguration } from "../data/Field";
+import {
+  FieldConfiguration,
+  TreeConfiguration,
+  TreeLineConfiguration,
+} from "../data/Field";
 import workerManager from "./workerManager";
 import TreeOverview from "./TreeOverview.vue";
 import Tabs from "./layout/Tabs.vue";
@@ -232,31 +255,46 @@ export default {
           id: "Oak young",
           position: [-5, -5],
           scale: 1,
-          rotation: 0,
           leafLength: 0.1,
           leafWidth: 0.07,
           leavesPerTwig: 15,
           maxTwigRadius: 0.02,
+          treeline: false,
+          rotation: 0,
+          xCount: 4,
+          xDistance: 3,
+          yCount: 1,
+          yDistance: 5,
         },
         {
           id: "Oak medium",
           position: [0, 0],
           scale: 1,
-          rotation: 120,
           leafLength: 0.1,
           leafWidth: 0.07,
           leavesPerTwig: 15,
           maxTwigRadius: 0.02,
+          treeline: false,
+          rotation: 0,
+          xCount: 4,
+          xDistance: 3,
+          yCount: 1,
+          yDistance: 5,
         },
         {
           id: "Oak old",
           position: [5, 5],
           scale: 1,
-          rotation: 240,
           leafLength: 0.1,
           leafWidth: 0.07,
           leavesPerTwig: 15,
           maxTwigRadius: 0.02,
+          treeline: false,
+          rotation: 0,
+          xCount: 4,
+          xDistance: 3,
+          yCount: 1,
+          yDistance: 5,
         },
       ],
     };
@@ -277,7 +315,7 @@ export default {
     invalidate() {
       this.updated = false;
     },
-    invalidateTree(tree: TreeConfiguration) {
+    invalidateTree(tree: TreeLineConfiguration) {
       Vue.delete(tree, "leafDensityValues");
       Vue.delete(tree, "leafAreaIndex");
     },
@@ -295,7 +333,12 @@ export default {
         leafWidth: 0.1,
         leavesPerTwig: 10,
         maxTwigRadius: 0.05,
-      } as TreeConfiguration);
+        treeline: false,
+        xCount: 1,
+        xDistance: 2,
+        yCount: 1,
+        yDistance: 0,
+      } as TreeLineConfiguration);
       this.invalidate();
     },
     async calculateLeafDensity(tree: any) {
