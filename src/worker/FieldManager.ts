@@ -253,7 +253,7 @@ export default class FieldManager {
       this.ground.add(tree);
     };
     let index = 0;
-    for (const treeLineParameters of parameters.trees) {
+    for (const treelineParameters of parameters.trees) {
       let {
         xCount,
         yCount,
@@ -263,7 +263,7 @@ export default class FieldManager {
         rotation,
         position: [cx, cy],
         ...treeParameters
-      } = treeLineParameters;
+      } = treelineParameters;
 
       if (!treeline) {
         rotation = 0;

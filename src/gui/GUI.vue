@@ -112,6 +112,7 @@
                       v-model="tree.treeline",
                       @input="() => { invalidate(); }"
                     )
+
                 div(v-if="tree.treeline")
                   gui-setting(
                     v-for="setting of settingsLayout.treeline",
@@ -183,7 +184,7 @@ import Vue from "vue";
 import {
   FieldConfiguration,
   TreeConfiguration,
-  TreeLineConfiguration,
+  TreelineConfiguration,
 } from "../data/Field";
 import workerManager from "./workerManager";
 import TreeOverview from "./TreeOverview.vue";
@@ -315,7 +316,7 @@ export default {
     invalidate() {
       this.updated = false;
     },
-    invalidateTree(tree: TreeLineConfiguration) {
+    invalidateTree(tree: TreelineConfiguration) {
       Vue.delete(tree, "leafDensityValues");
       Vue.delete(tree, "leafAreaIndex");
     },
@@ -338,8 +339,8 @@ export default {
         xDistance: 2,
         yCount: 1,
         yDistance: 0,
-      } as TreeLineConfiguration);
-      this.invalidate();
+      } as TreelineConfiguration);
+      TreelineConfigurationthis.invalidate();
     },
     async calculateLeafDensity(tree: any) {
       Vue.set(tree, "leafDensityValues", "loading");

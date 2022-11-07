@@ -9,7 +9,7 @@ export interface TreeConfiguration {
   maxTwigRadius: number;
 }
 
-export type TreeLineConfiguration = TreeConfiguration & {
+export type TreelineConfiguration = TreeConfiguration & {
   treeline: boolean;
   xCount: number;
   xDistance: number;
@@ -30,5 +30,5 @@ export interface FieldConfiguration {
     renderSize: number;
     diffuseLightCount: number;
   };
-  trees: TreeLineConfiguration[];
+  trees: TreelineConfiguration[];
 }
