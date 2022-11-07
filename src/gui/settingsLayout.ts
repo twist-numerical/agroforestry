@@ -196,7 +196,6 @@ export default function(guiElement: any) {
           precision: 2,
         },
       },
-      ,
     ],
     treeline: [
       {
