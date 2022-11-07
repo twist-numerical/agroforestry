@@ -150,7 +150,7 @@ export default class FieldManager {
         : [TREE_COLOR_FADED, LEAF_COLOR_FADED];
 
     this.trees.forEach(([index, tree]) => {
-      if (highlight.indexOf(index) >= 0) {
+      if (highlight && highlight.indexOf(index) >= 0) {
         if (tree.tree)
           (tree.tree.material as MeshBasicMaterial).color.set(TREE_COLOR);
         if (tree.leaves) tree.leaves.material.color.set(LEAF_COLOR);
