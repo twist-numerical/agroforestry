@@ -243,7 +243,7 @@ export default {
         latitude: 50.5,
         rotation: 15,
         inclination: 0,
-        inclinationRotation: 45,
+        //inclinationRotation: 45,
       },
       sensors: {
         size: [16, 16],

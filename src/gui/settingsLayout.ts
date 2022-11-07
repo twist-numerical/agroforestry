@@ -27,6 +27,8 @@ export default function(guiElement: any) {
       {
         name: "Size",
         value: "size",
+        info:
+          "The size of the sensorfield in meter in an x and y direction",
         type: "coordinate",
         attributes: {
           ...logSlider(2, 2000, 2),
@@ -35,6 +37,8 @@ export default function(guiElement: any) {
       {
         name: "Count",
         value: "count",
+        info:
+          "The number of sensors placed in the x and y direction",
         type: "coordinate",
         attributes: {
           ...logSlider(1, 256, 0),
@@ -77,6 +81,8 @@ export default function(guiElement: any) {
       {
         name: "Latitude",
         value: "latitude",
+        info:
+          "The latitude of the location for which simulations need to be performed",
         attributes: {
           min: -90,
           max: 90,
@@ -85,6 +91,8 @@ export default function(guiElement: any) {
       {
         name: "Rotation",
         value: "rotation",
+        info:
+          "The field can be rotated from 0 degrees to 180 degrees",
         attributes: {
           min: 0,
           max: 360,
@@ -94,25 +102,29 @@ export default function(guiElement: any) {
       {
         name: "Inclination",
         value: "inclination",
+        info:
+          "This parameter determines the steepness of the field, between 0 degrees (field is horizontal) to 90 degrees in which the field would be vertical",
         attributes: {
           min: 0,
           max: 90,
         },
       },
-      {
+      /*{
         name: "Uphill",
         value: "inclinationRotation",
         attributes: {
           min: 0,
           max: 360,
         },
-      },
+      },*/
     ],
     tree: [
       {
         name: "Position",
         type: "coordinate",
         value: "position",
+        info:
+          "The position of the tree in the x and y direction",
         attributes: {
           get xbounds() {
             const max = guiElement.changedField.sensors.size[0] * 1.5;
@@ -127,6 +139,8 @@ export default function(guiElement: any) {
       {
         name: "Scale",
         value: "scale",
+        info:
+          "The tree may be scaled in size (width and height), 1 means the original size is used",
         invalidateTree: true,
         attributes: {
           min: 0.5,
@@ -137,6 +151,8 @@ export default function(guiElement: any) {
       {
         name: "Type",
         value: "id",
+        info:
+          "The tree you want to place in the scene",
         invalidateTree: true,
         type: "select",
         attributes() {
@@ -198,7 +214,7 @@ export default function(guiElement: any) {
       },
     ],
     treeline: [
-      {
+      /*{
         name: "Rotation",
         value: "rotation",
         attributes: {
@@ -206,10 +222,12 @@ export default function(guiElement: any) {
           max: 360,
           precision: 1,
         },
-      },
+      },*/
       {
         name: "xCount",
         value: "xCount",
+        info:
+          "Number of trees to be placed in the scene in the x direction",
         attributes: {
           min: 1,
           max: 20,
@@ -219,6 +237,8 @@ export default function(guiElement: any) {
       {
         name: "xDistance",
         value: "xDistance",
+        info:
+          "Distance between the trees in the x direction in meter",
         attributes: {
           min: 0,
           max: 10,
@@ -228,6 +248,8 @@ export default function(guiElement: any) {
       {
         name: "yCount",
         value: "yCount",
+        info:
+          "Number of trees to be placed in the scene in the y direction",
         attributes: {
           min: 1,
           max: 5,
@@ -237,6 +259,8 @@ export default function(guiElement: any) {
       {
         name: "yDistance",
         value: "yDistance",
+        info:
+          "Distance between the trees in the y direction in meter",
         attributes: {
           min: 0,
           max: 10,
