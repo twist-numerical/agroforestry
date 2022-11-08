@@ -74,7 +74,7 @@ in vec2 vUv;
 
 uniform sampler2D digits;
 
-uint mod(uint x, uint m) {
+uint imod(uint x, uint m) {
   return uint(mod(float(x), float(m)));
 }
 
@@ -82,10 +82,10 @@ void main() {
   gl_FragColor.a = 1.;
   gl_FragColor.rgb = vColor;
 
-  uint d0 = mod(id, 10u);
-  uint d1 = mod(id/10u, 10u);
-  uint d2 = mod(id/100u, 10u);
-  uint d3 = mod(id/1000u, 10u);
+  uint d0 = imod(id, 10u);
+  uint d1 = imod(id/10u, 10u);
+  uint d2 = imod(id/100u, 10u);
+  uint d3 = imod(id/1000u, 10u);
 
   uint d = d0;
   float x = 1.2*(1.0-vUv.y)-0.2;
