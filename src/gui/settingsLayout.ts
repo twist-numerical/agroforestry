@@ -241,7 +241,7 @@ export default function(guiElement: any) {
           "Distance between the trees in the x direction in meter",
         attributes: {
           min: 0,
-          max: 10,
+          max: 30,
           precision: 2,
         },
       },
@@ -252,7 +252,7 @@ export default function(guiElement: any) {
           "Number of trees to be placed in the scene in the y direction",
         attributes: {
           min: 1,
-          max: 5,
+          max: 10,
           precision: 0,
         },
       },
@@ -263,7 +263,7 @@ export default function(guiElement: any) {
           "Distance between the trees in the y direction in meter",
         attributes: {
           min: 0,
-          max: 10,
+          max: 30,
           precision: 2,
         },
       },
