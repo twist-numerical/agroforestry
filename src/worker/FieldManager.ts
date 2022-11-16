@@ -266,7 +266,6 @@ export default class FieldManager {
       } = treelineParameters;
 
       if (!treeline) {
-        rotation = 0;
         xCount = 1;
         yCount = 1;
         xDistance = 0;
@@ -284,7 +283,7 @@ export default class FieldManager {
                 cx + Math.cos(alpha) * dx + Math.sin(alpha) * dy,
                 cy - Math.sin(alpha) * dx + Math.cos(alpha) * dy,
               ],
-              rotation: 360 * Math.random(),
+              rotation: rotation,
             },
             index
           );

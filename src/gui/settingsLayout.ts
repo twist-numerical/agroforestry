@@ -147,6 +147,15 @@ export default function(guiElement: any) {
           max: 2,
           precision: 2,
         },
+        },
+        {
+        name: "Rotation",
+        value: "rotation",
+        attributes: {
+          min: 0,
+          max: 360,
+          precision: 1,
+        },
       },
       {
         name: "Type",
@@ -214,15 +223,7 @@ export default function(guiElement: any) {
       },
     ],
     treeline: [
-      /*{
-        name: "Rotation",
-        value: "rotation",
-        attributes: {
-          min: 0,
-          max: 360,
-          precision: 1,
-        },
-      },*/
+      
       {
         name: "xCount",
         value: "xCount",
