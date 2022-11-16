@@ -151,6 +151,8 @@ export default function(guiElement: any) {
         {
         name: "Rotation",
         value: "rotation",
+        info:
+          "Individual trees can be rotated between 0° and 360°",
         attributes: {
           min: 0,
           max: 360,
