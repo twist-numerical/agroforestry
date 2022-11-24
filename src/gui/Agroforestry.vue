@@ -49,7 +49,7 @@
           .row.mb-3
             .col-6
               UploadFile.btn.btn-link(@file="uploadLeafGrowth", accept="*") 
-                | Import
+                | Import phenology file
             .col-12
               leaf-graph(
                 :values="yearSettings.leafGrowth",
@@ -58,14 +58,14 @@
                 :aspectRatio="0.3",
                 width="100%"
               )
-                rect.summer(width="0.25", height="0.3", x="0.5", y="0")
+                rect.summer(width="1", height="0.3", x="0", y="0")
                 text(
-                  x="0.5",
+                  x="0.15",
                   y="0.28",
-                  textLength="0.25",
+                  textLength="0.7",
                   lengthAdjust="spacingAndGlyphs",
                   style="font-size: 0.05pt; text-anchor: bottom; fill: white"
-                ) {{ String.fromCharCode(160) }}summer{{ String.fromCharCode(160) }}
+                ) {{ String.fromCharCode(160) }}leaf development over year{{ String.fromCharCode(160) }}
                 template(v-slot:overlay="")
                   rect.progress(
                     v-if="active",

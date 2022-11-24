@@ -151,6 +151,9 @@
               ul
                 li
                   cite
+                    | Instruction manual <a href="https://github.com/twist-numerical/agroforestry/raw/main/InstructionManualLightModel.pdf">(Download manual)</a>
+                li
+                  cite
                     | Van Den Berge Sanne, Vangansbeke Pieter, Calders Kim, Vanneste Thomas, Baeten Lander, Verbeeck Hans, … Verheyen Kris.
                     | <i>Terrestrial laser scanning - RIEGL VZ-1000, individual tree point clouds and cylinder models, Belgian hedgerows and tree rows [Data set].</i>
                     | Zenodo. (2021) <a href="http://doi.org/10.5281/zenodo.4487116">http://doi.org/10.5281/zenodo.4487116</a>
@@ -160,7 +163,6 @@
                     | <i>Biomass Expansion Factors for Hedgerow-Grown Trees Derived from Terrestrial LiDAR.</i>
                     | Bioenerg. Res. (2021).
                     | <a href="https://doi.org/10.1007/s12155-021-10250-y">https://doi.org/10.1007/s12155-021-10250-y</a>
-
     template(v-slot:right="")
       .position-relative
         agroforestry(
