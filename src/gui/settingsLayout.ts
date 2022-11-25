@@ -143,7 +143,7 @@ export default function(guiElement: any) {
           "The tree may be scaled in size (width and height), 1 means the original size is used",
         invalidateTree: true,
         attributes: {
-          min: 0.5,
+          min: 0.2,
           max: 2,
           precision: 2,
         },
