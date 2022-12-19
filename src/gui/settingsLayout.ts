@@ -144,7 +144,7 @@ export default function(guiElement: any) {
         invalidateTree: true,
         attributes: {
           min: 0.2,
-          max: 2,
+          max: 3,
           precision: 2,
         },
         },
