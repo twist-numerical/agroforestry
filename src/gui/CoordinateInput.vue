@@ -24,6 +24,7 @@ export default {
   components: {
     NumberInput,
   },
+  emits: ["update:modelValue"],
   props: {
     xbounds: {
       type: Array,
@@ -33,15 +34,15 @@ export default {
       type: Array,
       default: () => [-1, 1],
     },
-    value: {
+    modelValue: {
       type: Array,
       default: () => [0, 0],
     },
   },
   data() {
     return {
-      x: this.value[0],
-      y: this.value[1],
+      x: this.modelValue[0],
+      y: this.modelValue[1],
     };
   },
   computed: {
@@ -50,12 +51,12 @@ export default {
     },
   },
   watch: {
-    value() {
-      this.x = this.value[0];
-      this.y = this.value[1];
+    modelValue() {
+      this.x = this.modelValue[0];
+      this.y = this.modelValue[1];
     },
     input() {
-      this.$emit("input", this.input);
+      this.$emit("update:modelValue", this.input);
     },
   },
 };

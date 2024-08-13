@@ -5,8 +5,7 @@ label
 </template>
 
 <script lang="ts">
-import Vue from "vue";
-export default Vue.extend({
+export default {
   props: {
     accept: {
       type: String,
@@ -19,7 +18,7 @@ export default Vue.extend({
       event.target.value = [];
     },
   },
-});
+};
 </script>
 
 <style lang="scss" scoped>

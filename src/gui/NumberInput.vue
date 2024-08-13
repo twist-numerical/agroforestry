@@ -24,6 +24,7 @@ export function parse(input: any) {
 }
 
 export default {
+  emits: ["update:modelValue"],
   props: {
     min: {
       type: Number,
@@ -33,7 +34,7 @@ export default {
       type: Number,
       default: 1,
     },
-    value: {
+    modelValue: {
       type: [Number, String],
       default: 0,
     },
@@ -92,7 +93,7 @@ export default {
   },
   data() {
     return {
-      rawValue: this.value,
+      rawValue: this.modelValue,
       valid: true,
     };
   },
@@ -100,7 +101,7 @@ export default {
     inputValue() {
       const evaluationID = ++this.evaluationID;
       try {
-        const value = this.parse(this.rawValue);
+        const value = this.parse("" + this.rawValue);
         this.valid = true;
         return value;
       } catch (error) {
@@ -116,10 +117,10 @@ export default {
   },
   watch: {
     value() {
-      if (this.value != this.inputValue) this.rawValue = this.value;
+      if (this.modelValue != this.inputValue) this.rawValue = this.modelValue;
     },
     inputValue() {
-      if (this.valid) this.$emit("input", this.inputValue);
+      if (this.valid) this.$emit("update:modelValue", this.inputValue);
     },
   },
   methods: {
@@ -141,11 +142,9 @@ export default {
   z-index: 3;
   width: 100%;
   display: block;
-  background: linear-gradient(
-    90deg,
-    $secondary var(--number-input-value),
-    #fff calc(var(--number-input-value) + 0.1%)
-  );
+  background: linear-gradient(90deg,
+      $secondary var(--number-input-value),
+      #fff calc(var(--number-input-value) + 0.1%));
 
   &.invalid {
     color: red;

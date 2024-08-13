@@ -17,15 +17,6 @@
           span {{ item.title }}
         template(v-slot:field="")
           form.flex-grow-1.position-relative.m-0(@drop.stop.prevent="onDrop")
-            //-
-              .update-panel.p-3.pt-0.row
-               .col-4.text-center
-                 upload-file.btn.btn-link(@file="upload", accept=".json") 
-                   | Import
-               .col-4.text-center
-                 button.btn.btn-link(type="button", @click="() => download()") Export
-               .col-4.text-center
-
             .position-absolute.container-fluid.h-100.overflow-y-auto.p-3
               h2 Geography
 
@@ -37,7 +28,7 @@
                   :type="setting.type",
                   :info="setting.info",
                   v-model="changedField.geography[setting.value]",
-                  @input="invalidate"
+                  @update:model-value="invalidate"
                 )
 
               h2 Sensors
@@ -50,7 +41,7 @@
                   :type="setting.type",
                   :info="setting.info",
                   v-model="changedField.sensors[setting.value]",
-                  @input="invalidate"
+                  @update:modelValue="invalidate"
                 )
 
               h2 Trees
@@ -69,7 +60,7 @@
                   :type="setting.type",
                   :info="setting.info",
                   v-model="tree[setting.value]",
-                  @input="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
+                  @update:model-value="() => { invalidate(); if (setting.invalidateTree) invalidateTree(tree); }"
                 )
                 .form-label.row
                   gui-label.col-4(
@@ -110,7 +101,7 @@
                     input.form-check-input(
                       type="checkbox",
                       v-model="tree.treeline",
-                      @input="() => { invalidate(); }"
+                      @update:model-value="invalidate"
                     )
 
                 div(v-if="tree.treeline")
@@ -121,7 +112,7 @@
                     :type="setting.type",
                     :info="setting.info",
                     v-model="tree[setting.value]",
-                    @input="() => { invalidate(); }"
+                    @update:model-value="invalidate"
                   )
                 .clearfix
                   button.float-end.btn.btn-link.btn-sm(
@@ -182,7 +173,6 @@ import GUILabel from "./GUILabel.vue";
 import GUISetting from "./GUISetting.vue";
 import SideBySide from "./layout/SideBySide.vue";
 import { saveAs } from "file-saver";
-import Vue from "vue";
 import {
   FieldConfiguration,
   TreeConfiguration,
@@ -191,6 +181,7 @@ import {
 import workerManager from "./workerManager";
 import TreeOverview from "./TreeOverview.vue";
 import Tabs from "./layout/Tabs.vue";
+import { toRaw } from "vue";
 
 function clone(obj: any) {
   if (obj === null || obj === undefined) return obj;
@@ -316,11 +307,13 @@ export default {
   },
   methods: {
     invalidate() {
+      console.log("invalidated")
       this.updated = false;
     },
     invalidateTree(tree: TreelineConfiguration) {
-      Vue.delete(tree, "leafDensityValues");
-      Vue.delete(tree, "leafAreaIndex");
+      console.log("invalidated tree")
+      delete tree["leafDensityValues"];
+      delete tree["leafAreaIndex"];
     },
     update() {
       this.updated = true;
@@ -342,25 +335,25 @@ export default {
         yCount: 1,
         yDistance: 0,
       } as TreelineConfiguration);
-      TreelineConfigurationthis.invalidate();
+      this.invalidate();
     },
     async calculateLeafDensity(tree: any) {
-      Vue.set(tree, "leafDensityValues", "loading");
+      tree["leafDensityValues"] = "loading";
       const density = (
         await workerManager.onReply(
-          workerManager.postMessage("leafDensity", tree)
+          workerManager.postMessage("leafDensity", toRaw(tree))
         )
       ).data as number[];
-      Vue.set(tree, "leafDensityValues", density);
+      tree["leafDensityValues"] = density;
     },
     async calculateLeafAreaIndex(tree: any) {
-      Vue.set(tree, "leafAreaIndex", "loading");
+      tree["leafAreaIndex"] = "loading";
       const leafAreaIndex = (
         await workerManager.onReply(
-          workerManager.postMessage("leafAreaIndex", tree)
+          workerManager.postMessage("leafAreaIndex", toRaw(tree))
         )
       ).data as number;
-      Vue.set(tree, "leafAreaIndex", leafAreaIndex);
+      tree["leafAreaIndex"] = leafAreaIndex;
     },
     onError(e: { message: string }) {
       this.error(e.message);

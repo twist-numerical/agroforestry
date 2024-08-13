@@ -5,20 +5,20 @@ label.form-label.row
     coordinate-input.input-group-sm(
       v-if="type == 'coordinate'",
       v-bind="attributes",
-      :value="value",
-      @input="onInput"
+      :model-value="modelValue",
+      @update:model-value="onInput"
     )
     select.form-select(
       v-else-if="type == 'select'",
-      :value="value",
+      :value="modelValue",
       @input="onInput"
     )
-      option(v-for="option of attributes.options", :value="option.value") {{ option.name }}
+      option(v-for="option of attributes.options", :value="option.modelValue") {{ option.name }}
     number-input.form-control(
       v-else,
       v-bind="attributes",
-      :value="value",
-      @input="onInput"
+      :model-value="modelValue",
+      @update:model-value="onInput"
     )
 </template>
 
@@ -33,6 +33,7 @@ export default {
     CoordinateInput,
     "gui-label": GUILabel,
   },
+  emits: ["update:modelValue"],
   props: {
     name: {
       type: String,
@@ -40,7 +41,7 @@ export default {
     info: {
       type: String,
     },
-    value: {},
+    modelValue: {},
     type: {
       type: String,
     },
@@ -51,7 +52,7 @@ export default {
   },
   methods: {
     onInput(event) {
-      this.$emit("input", event.target ? event.target.value : event);
+      this.$emit("update:modelValue", event.target ? event.target.value : event);
     },
   },
 };

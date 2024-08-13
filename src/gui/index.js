@@ -1,8 +1,9 @@
-import Vue from "vue";
+import { createApp } from 'vue'
 import GUI from "./GUI.vue";
 import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 import "./style.scss";
 
-new Vue({ render: (createElement) => createElement(GUI) }).$mount("#app");
+const app = createApp(GUI);
+app.mount("#app");

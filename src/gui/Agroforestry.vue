@@ -103,6 +103,7 @@ import Accordion from "./layout/Accordion.vue";
 import NumberInput from "./NumberInput.vue";
 import workerManager from "./workerManager";
 import { RenderSettings } from "../worker/FieldManager";
+import { toRaw } from "vue";
 
 function rafPromise(mspt = 0): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -218,7 +219,7 @@ export default {
       const offscreen = this.$refs.canvas.transferControlToOffscreen();
       workerManager.postMessage("init", offscreen, [offscreen]);
 
-      workerManager.postMessage("loadField", this.field);
+      workerManager.postMessage("loadField", toRaw(this.field));
       this.resize();
 
       if (this.controls) this.controls.dispose();
@@ -250,7 +251,7 @@ export default {
       const data = (
         await workerManager.onReply(
           workerManager.postMessage("year", {
-            leafGrowth: this.yearSettings.leafGrowth,
+            leafGrowth: toRaw(this.yearSettings.leafGrowth),
             stepSize: this.yearSettings.timeStep * 60,
           })
         )
@@ -355,7 +356,7 @@ export default {
   },
   watch: {
     field() {
-      workerManager.postMessage("loadField", this.field);
+      workerManager.postMessage("loadField", toRaw(this.field));
     },
   },
   destroyed() {

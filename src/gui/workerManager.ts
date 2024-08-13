@@ -1,7 +1,10 @@
 import MessageHandler, { Message } from "../worker/MessageHandler";
 
 function newWorker() {
-  return new Worker("../worker/worker.ts");
+  return new Worker(
+    new URL("../worker/worker.ts", import.meta.url),
+    {type: 'module'}
+  );
 }
 
 class WorkerManager extends MessageHandler {

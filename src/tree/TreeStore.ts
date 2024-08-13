@@ -3,7 +3,7 @@ import { AvailableTree } from "../data/AvailableTree";
 import Tree, { LeafedTreeSettings } from "./Tree";
 import TreeGeometry from "./TreeGeometry";
 //@ts-ignore
-import treeFiles from "./trees/*.csv";
+import treeFiles from "url:./trees/*.csv";
 import * as idb from "idb";
 import crossFetch from "cross-fetch";
 
@@ -11,6 +11,10 @@ let fetch = crossFetch;
 if (process.env.NODE_ENV === "test") {
   const fs = require("fs").promises;
   fetch = (async (path: string): Promise<{ text: () => Promise<string> }> => {
+    if (path.startsWith("file://")) {
+      path = path.slice(7);
+      path = decodeURI(path);
+    }
     return {
       text() {
         return fs.readFile(path, "utf8");

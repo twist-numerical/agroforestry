@@ -5,3 +5,4 @@ save-files
 .vscode
 dist-test
 .vs
+.parcel-cache

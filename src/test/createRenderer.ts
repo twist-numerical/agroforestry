@@ -18,6 +18,7 @@ export default function createRenderer(
   gl.canvas = canvas;
   const renderer = new WebGLRenderer({
     canvas: canvas,
+    context: gl,
   });
   renderer.extensions.get("OES_texture_float");
   return renderer;

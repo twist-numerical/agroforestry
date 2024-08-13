@@ -7,9 +7,7 @@ svg(:viewBox="`0 0 1 ${aspectRatio}`")
 </template>
 
 <script lang="ts">
-import Vue from "vue";
-
-export default Vue.extend({
+export default {
   props: {
     values: {
       type: Array,
@@ -47,7 +45,7 @@ export default Vue.extend({
       );
     },
   },
-});
+};
 </script>
 
 <style lang="scss" scoped>
