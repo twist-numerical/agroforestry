@@ -4,3 +4,4 @@ dist
 save-files
 .vscode
 dist-test
+.vs
